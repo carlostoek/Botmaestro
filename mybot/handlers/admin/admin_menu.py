@@ -137,8 +137,24 @@ async def back_to_admin_main(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
+IGNORED_CALLBACKS = {
+    "admin_vip",
+    "admin_free",
+    "admin_game",
+    "admin_config",
+    "admin_back",
+    "admin_manage_users",
+    "admin_manage_content",
+    "admin_manage_events_sorteos",
+    "admin_bot_config",
+    "admin_main_menu",
+}
+
+
 @router.callback_query(F.data.startswith("admin_"))
 async def admin_placeholder(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    if callback.data in IGNORED_CALLBACKS:
         return await callback.answer()
     await callback.answer("Funcionalidad en desarrollo.", show_alert=True)
