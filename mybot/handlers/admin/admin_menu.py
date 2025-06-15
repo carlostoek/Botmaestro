@@ -48,5 +48,8 @@ async def admin_game_entry(callback: CallbackQuery):
 async def admin_back(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
-    await callback.message.delete()
+    await callback.message.edit_text(
+        "Menú de administración",
+        reply_markup=get_admin_main_kb(),
+    )
     await callback.answer()

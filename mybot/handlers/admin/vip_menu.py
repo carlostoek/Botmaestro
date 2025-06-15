@@ -1,5 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.user_roles import is_admin, is_vip_member
@@ -80,6 +81,24 @@ async def vip_price_input(message: Message, session: AsyncSession):
     await message.answer("Precio actualizado")
 
 
+@router.callback_query(F.data == "vip_admin_stats")
+async def vip_admin_stats(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    service = SubscriptionService(session)
+    total = await service.count_total_subscriptions()
+    active_list = await service.list_active_subscriptions()
+    active = len(active_list)
+    expired = await service.count_expired_subscriptions()
+    text = (
+        f"Total suscriptores: {total}\n"
+        f"Activos: {active}\n"
+        f"Expirados: {expired}"
+    )
+    await callback.message.edit_text(text, reply_markup=get_vip_admin_tools_kb())
+    await callback.answer()
+
+
 @router.callback_query(F.data == "vip_admin_gen_link")
 async def vip_admin_gen_link(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
@@ -96,12 +115,42 @@ async def vip_admin_gen_link(callback: CallbackQuery, session: AsyncSession):
 async def vip_admin_list(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
+    await _show_subs_page(callback.message, session, 0)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vip_subs_page:"))
+async def vip_admin_list_page(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    try:
+        page = int(callback.data.split(":", 1)[1])
+    except ValueError:
+        page = 0
+    await _show_subs_page(callback.message, session, page)
+    await callback.answer()
+
+
+async def _show_subs_page(message: Message, session: AsyncSession, page: int) -> None:
     service = SubscriptionService(session)
     subs = await service.list_active_subscriptions()
     if not subs:
-        await callback.message.edit_text("No hay suscriptores activos", reply_markup=get_vip_admin_tools_kb())
-        await callback.answer()
+        await message.edit_text("No hay suscriptores activos", reply_markup=get_vip_admin_tools_kb())
         return
-    text = "\n".join([f"{sub.user_id} → {sub.end_date.date()}" for sub in subs])
-    await callback.message.edit_text(text, reply_markup=get_vip_admin_tools_kb())
-    await callback.answer()
+
+    per_page = 10
+    start = page * per_page
+    end = start + per_page
+    page_subs = subs[start:end]
+
+    lines = [f"{sub.user_id} → {sub.end_date.date()}" for sub in page_subs]
+    text = "\n".join(lines)
+
+    builder = InlineKeyboardBuilder()
+    if start > 0:
+        builder.button(text="← Anterior", callback_data=f"vip_subs_page:{page-1}")
+    if end < len(subs):
+        builder.button(text="Siguiente →", callback_data=f"vip_subs_page:{page+1}")
+    builder.button(text="🔙 Volver", callback_data="vip_admin_tools")
+    builder.adjust(1)
+    await message.edit_text(text, reply_markup=builder.as_markup())
