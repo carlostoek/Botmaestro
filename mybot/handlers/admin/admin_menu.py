@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart, Command
 
 from keyboards.admin_main_kb import get_admin_main_kb
 from utils.user_roles import is_admin
-from utils.keyboard_utils import get_main_menu_keyboard
+from utils.keyboard_utils import get_main_menu_keyboard, get_admin_main_keyboard
 from utils.messages import BOT_MESSAGES
 
 from .vip_menu import router as vip_router
@@ -39,7 +39,7 @@ async def admin_game_entry(callback: CallbackQuery):
         return await callback.answer()
     await callback.message.edit_text(
         BOT_MESSAGES["start_welcome_returning_user"],
-        reply_markup=get_main_menu_keyboard(),
+        reply_markup=get_admin_main_keyboard(),
     )
     await callback.answer()
 
