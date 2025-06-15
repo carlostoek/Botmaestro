@@ -22,6 +22,10 @@ class User(AsyncAttrs, Base):
     last_weekly_mission_reset = Column(DateTime, default=func.now())
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Role management and VIP expiration
+    role = Column(String, default="free")
+    vip_expires_at = Column(DateTime, nullable=True)
     
     # ¡NUEVA COLUMNA para el estado del menú!
     menu_state = Column(String, default="root") # e.g., "root", "profile", "missions", "rewards"
@@ -108,6 +112,17 @@ class SubscriptionToken(AsyncAttrs, Base):
     used_by = Column(BigInteger, nullable=True)
     created_at = Column(DateTime, default=func.now())
     used_at = Column(DateTime, nullable=True)
+
+
+class Token(AsyncAttrs, Base):
+    """VIP activation tokens for offline payments."""
+
+    __tablename__ = "tokens"
+
+    token_id = Column(String, primary_key=True)
+    subscription_duration = Column(String, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    is_used = Column(Boolean, default=False)
 
 
 class ConfigEntry(AsyncAttrs, Base):
