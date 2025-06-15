@@ -35,6 +35,13 @@ async def main() -> None:
     dp.callback_query.outer_middleware(session_middleware_factory(Session, bot))
     dp.chat_join_request.outer_middleware(session_middleware_factory(Session, bot))
     dp.chat_member.outer_middleware(session_middleware_factory(Session, bot))
+    dp.poll_answer.outer_middleware(session_middleware_factory(Session, bot))
+    dp.message_reaction.outer_middleware(session_middleware_factory(Session, bot))
+
+    from middlewares import PointsMiddleware
+    dp.message.middleware(PointsMiddleware())
+    dp.poll_answer.middleware(PointsMiddleware())
+    dp.message_reaction.middleware(PointsMiddleware())
 
     dp.include_router(start_token)
     dp.include_router(start.router)

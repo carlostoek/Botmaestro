@@ -1,5 +1,5 @@
 # database/models.py
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey, Float
 from uuid import uuid4
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -14,7 +14,7 @@ class User(AsyncAttrs, Base):
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
-    points = Column(Integer, default=0)
+    points = Column(Float, default=0)
     level = Column(Integer, default=1)
     achievements = Column(JSON, default={}) # {'achievement_id': timestamp_isoformat}
     missions_completed = Column(JSON, default={}) # {'mission_id': timestamp_isoformat}
@@ -78,6 +78,15 @@ class VipSubscription(AsyncAttrs, Base):
     user_id = Column(BigInteger, primary_key=True)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=func.now())
+
+
+class UserProgress(AsyncAttrs, Base):
+    __tablename__ = "user_progress"
+    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    total_points = Column(Float, default=0)
+    last_activity_at = Column(DateTime, default=func.now())
+    last_checkin_at = Column(DateTime, nullable=True)
+    last_notified_points = Column(Float, default=0)
 
 
 class InviteToken(AsyncAttrs, Base):

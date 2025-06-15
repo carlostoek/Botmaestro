@@ -1,6 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from database.models import User
+from sqlalchemy import select
+from database.models import User, UserProgress
+from utils.user_roles import get_points_multiplier
+from aiogram import Bot
+import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,22 +12,82 @@ class PointService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_points(self, user_id: int, points: int) -> User:
+    async def _get_or_create_progress(self, user_id: int) -> UserProgress:
+        progress = await self.session.get(UserProgress, user_id)
+        if not progress:
+            progress = UserProgress(user_id=user_id)
+            self.session.add(progress)
+            await self.session.commit()
+            await self.session.refresh(progress)
+        return progress
+
+    async def award_message(self, user_id: int, bot: Bot) -> UserProgress | None:
+        progress = await self._get_or_create_progress(user_id)
+        now = datetime.datetime.utcnow()
+        if progress.last_activity_at and (now - progress.last_activity_at).total_seconds() < 30:
+            return None
+        progress = await self.add_points(user_id, 1, bot=bot)
+        return progress
+
+    async def award_reaction(
+        self, user: User, message_id: int, bot: Bot
+    ) -> UserProgress | None:
+        if user.channel_reactions and str(message_id) in user.channel_reactions:
+            return None
+        if user.channel_reactions is None:
+            user.channel_reactions = {}
+        user.channel_reactions[str(message_id)] = True
+        progress = await self.add_points(user.id, 0.5, bot=bot)
+        return progress
+
+    async def award_poll(self, user_id: int, bot: Bot) -> UserProgress:
+        progress = await self.add_points(user_id, 2, bot=bot)
+        return progress
+
+    async def daily_checkin(self, user_id: int, bot: Bot) -> tuple[bool, UserProgress]:
+        progress = await self._get_or_create_progress(user_id)
+        now = datetime.datetime.utcnow()
+        if progress.last_checkin_at and (now - progress.last_checkin_at).total_seconds() < 86400:
+            return False, progress
+        progress = await self.add_points(user_id, 10, bot=bot)
+        progress.last_checkin_at = now
+        await self.session.commit()
+        return True, progress
+
+    async def add_points(self, user_id: int, points: float, *, bot: Bot | None = None) -> UserProgress:
         user = await self.session.get(User, user_id)
         if not user:
-            # If user somehow doesn't exist, create a placeholder.
-            # In a real bot, user should be created on /start.
-            logger.warning(f"Attempted to add points to non-existent user {user_id}. Creating new user.")
-            user = User(id=user_id, points=0) # Initialize with 0 points
+            logger.warning(
+                f"Attempted to add points to non-existent user {user_id}. Creating new user."
+            )
+            user = User(id=user_id, points=0)
             self.session.add(user)
             await self.session.commit()
             await self.session.refresh(user)
 
-        user.points += points
+        multiplier = 1
+        if bot:
+            multiplier = await get_points_multiplier(bot, user_id)
+
+        total = points * multiplier
+        user.points += total
+        progress = await self._get_or_create_progress(user_id)
+        progress.total_points += total
+        progress.last_activity_at = datetime.datetime.utcnow()
         await self.session.commit()
+        await self.session.refresh(progress)
         await self.session.refresh(user)
-        logger.info(f"User {user_id} gained {points} points. Total: {user.points}")
-        return user
+        logger.info(
+            f"User {user_id} gained {total} points (base {points}, x{multiplier}). Total: {progress.total_points}"
+        )
+        if bot and progress.total_points - progress.last_notified_points >= 5:
+            await bot.send_message(
+                user_id,
+                f"Has acumulado {progress.total_points:.1f} puntos en total",
+            )
+            progress.last_notified_points = progress.total_points
+            await self.session.commit()
+        return progress
 
     async def deduct_points(self, user_id: int, points: int) -> User | None:
         user = await self.session.get(User, user_id)

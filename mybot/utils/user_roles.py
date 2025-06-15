@@ -1,5 +1,8 @@
 from aiogram import Bot
 from .config import ADMIN_IDS, VIP_IDS, VIP_CHANNEL_ID
+import os
+
+DEFAULT_VIP_MULTIPLIER = int(os.environ.get("VIP_POINTS_MULTIPLIER", "2"))
 
 
 def is_admin(user_id: int) -> bool:
@@ -18,6 +21,13 @@ async def is_vip_member(bot: Bot, user_id: int) -> bool:
         return member.status in {"member", "administrator", "creator"}
     except Exception:
         return False
+
+
+async def get_points_multiplier(bot: Bot, user_id: int) -> int:
+    """Return VIP multiplier for the user."""
+    if await is_vip_member(bot, user_id):
+        return DEFAULT_VIP_MULTIPLIER
+    return 1
 
 
 # Backwards compatibility
