@@ -114,6 +114,7 @@ def get_admin_manage_content_keyboard():
         [InlineKeyboardButton(text="🎁 Recompensas (Catálogo VIP)", callback_data="admin_content_rewards")],
         [InlineKeyboardButton(text="📦 Subastas", callback_data="admin_content_auctions")],
         [InlineKeyboardButton(text="🎁 Regalos Diarios", callback_data="admin_content_daily_gifts")],
+        [InlineKeyboardButton(text="🕹 Minijuegos", callback_data="admin_content_minigames")],
         [InlineKeyboardButton(text="📝 Publicar en Canal", callback_data="admin_send_channel_post")],
         [InlineKeyboardButton(text="🔙 Volver al Menú Principal de Administrador", callback_data="admin_main_menu")]
     ])
@@ -170,6 +171,13 @@ def get_admin_content_daily_gifts_keyboard():
     """Keyboard for daily gift configuration options."""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎯 Configurar Regalo del Día", callback_data="admin_configure_daily_gift")],
+        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
+    ])
+    return keyboard
+
+def get_admin_content_minigames_keyboard():
+    """Keyboard placeholder for minigames options."""
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
     ])
     return keyboard

@@ -12,6 +12,13 @@ from utils.keyboard_utils import (
     get_back_keyboard,
     get_custom_reaction_keyboard,
     get_admin_manage_content_keyboard,
+    get_admin_content_missions_keyboard,
+    get_admin_content_badges_keyboard,
+    get_admin_content_levels_keyboard,
+    get_admin_content_rewards_keyboard,
+    get_admin_content_auctions_keyboard,
+    get_admin_content_daily_gifts_keyboard,
+    get_admin_content_minigames_keyboard,
 )
 from utils.admin_state import AdminUserStates, AdminContentStates
 from services.point_service import PointService
@@ -219,4 +226,102 @@ async def process_channel_post(message: Message, state: FSMContext, session: Asy
         reply_markup=get_admin_manage_content_keyboard(),
     )
     await state.clear()
+
+
+@router.callback_query(F.data == "admin_content_missions")
+async def admin_content_missions(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "📌 Misiones - Selecciona una opción:",
+        get_admin_content_missions_keyboard(),
+        session,
+        "admin_content_missions",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_content_badges")
+async def admin_content_badges(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "🏅 Insignias - Selecciona una opción:",
+        get_admin_content_badges_keyboard(),
+        session,
+        "admin_content_badges",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_content_levels")
+async def admin_content_levels(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "📈 Niveles - Selecciona una opción:",
+        get_admin_content_levels_keyboard(),
+        session,
+        "admin_content_levels",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_content_rewards")
+async def admin_content_rewards(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "🎁 Recompensas (Catálogo VIP) - Selecciona una opción:",
+        get_admin_content_rewards_keyboard(),
+        session,
+        "admin_content_rewards",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_content_auctions")
+async def admin_content_auctions(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "📦 Subastas - Selecciona una opción:",
+        get_admin_content_auctions_keyboard(),
+        session,
+        "admin_content_auctions",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_content_daily_gifts")
+async def admin_content_daily_gifts(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "🎁 Regalos Diarios - Selecciona una opción:",
+        get_admin_content_daily_gifts_keyboard(),
+        session,
+        "admin_content_daily_gifts",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_content_minigames")
+async def admin_content_minigames(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "🕹 Minijuegos - Funcionalidad en desarrollo.",
+        get_admin_content_minigames_keyboard(),
+        session,
+        "admin_content_minigames",
+    )
+    await callback.answer()
 
