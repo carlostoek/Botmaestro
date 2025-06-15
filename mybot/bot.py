@@ -4,6 +4,7 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
 
 from handlers import start, admin, vip, free_user
+from handlers.vip import gamification
 from utils.config import BOT_TOKEN
 
 
@@ -14,6 +15,7 @@ async def main() -> None:
     dp.include_router(start.router)
     dp.include_router(admin.router)
     dp.include_router(vip.router)
+    dp.include_router(gamification.router)
     dp.include_router(free_user.router)
 
     await dp.start_polling(bot)
