@@ -73,6 +73,15 @@ class Event(AsyncAttrs, Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class Level(AsyncAttrs, Base):
+    __tablename__ = "levels"
+
+    level_id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    min_points = Column(Integer, nullable=False)
+    reward = Column(String, nullable=True)
+
+
 class VipSubscription(AsyncAttrs, Base):
     __tablename__ = "vip_subscriptions"
     user_id = Column(BigInteger, primary_key=True)
