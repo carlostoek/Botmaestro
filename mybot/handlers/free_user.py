@@ -12,9 +12,12 @@ router = Router()
 async def subscription_menu(message: Message):
     if is_admin(message.from_user.id) or is_vip(message.from_user.id):
         return
-    await message.answer("Subscription menu", reply_markup=get_subscription_kb())
+    await message.answer(
+        "Menú para usuarios del canal free",
+        reply_markup=get_subscription_kb(),
+    )
 
 
-@router.callback_query(F.data == "request_access")
+@router.callback_query(F.data == "free_button")
 async def request_access(callback: CallbackQuery):
-    await callback.answer("Request sent", show_alert=True)
+    await callback.answer("Acceso solicitado", show_alert=True)

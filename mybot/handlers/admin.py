@@ -12,9 +12,9 @@ router = Router()
 async def admin_menu(message: Message):
     if not is_admin(message.from_user.id):
         return
-    await message.answer("Admin menu", reply_markup=get_admin_kb())
+    await message.answer("Menú de administración", reply_markup=get_admin_kb())
 
 
-@router.callback_query(F.data == "admin_placeholder")
+@router.callback_query(F.data == "admin_button")
 async def admin_placeholder_handler(callback: CallbackQuery):
-    await callback.answer("Admin action placeholder")
+    await callback.answer("Acción de administración")

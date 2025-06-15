@@ -14,11 +14,17 @@ router = Router()
 async def cmd_start(message: Message):
     user_id = message.from_user.id
     if is_admin(user_id):
-        await message.answer("Welcome, admin!", reply_markup=get_admin_kb())
+        await message.answer(
+            "Bienvenido, administrador!",
+            reply_markup=get_admin_kb(),
+        )
     elif is_vip(user_id):
-        await message.answer("Welcome, VIP subscriber!", reply_markup=get_vip_kb())
+        await message.answer(
+            "Bienvenido, suscriptor VIP!",
+            reply_markup=get_vip_kb(),
+        )
     else:
         await message.answer(
-            "Welcome! Please consider subscribing.",
+            "Bienvenido al canal free!",
             reply_markup=get_subscription_kb(),
         )
