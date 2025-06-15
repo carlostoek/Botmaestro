@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.exceptions import SkipHandler
+from aiogram.dispatcher.event.bases import SkipHandler
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from sqlalchemy.ext.asyncio import AsyncSession
