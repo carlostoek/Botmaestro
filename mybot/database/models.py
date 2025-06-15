@@ -85,6 +85,20 @@ class InviteToken(AsyncAttrs, Base):
     expires_at = Column(DateTime, nullable=True)
 
 
+class SubscriptionPlan(AsyncAttrs, Base):
+    __tablename__ = "subscription_plans"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+    duration_days = Column(Integer, nullable=False)
+    status = Column(String, default="available")
+    created_by = Column(BigInteger, nullable=False)
+    used_by = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    used_at = Column(DateTime, nullable=True)
+
+
 class ConfigEntry(AsyncAttrs, Base):
     __tablename__ = "config_entries"
     key = Column(String, primary_key=True)
