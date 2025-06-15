@@ -5,7 +5,7 @@ from secrets import token_urlsafe
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models import InviteToken, SubscriptionToken
+from database.models import InviteToken, SubscriptionToken, Token
 
 
 class TokenService:
@@ -50,4 +50,17 @@ class TokenService:
         obj.used_at = datetime.utcnow()
         await self.session.commit()
         return obj
+
+
+async def validate_token(token: str, session: AsyncSession) -> str | None:
+    """Validate a VIP activation token and mark it as used."""
+
+    stmt = select(Token).where(Token.token_id == token)
+    result = await session.execute(stmt)
+    obj = result.scalar_one_or_none()
+    if not obj or obj.is_used:
+        return None
+    obj.is_used = True
+    await session.commit()
+    return obj.subscription_duration
 
