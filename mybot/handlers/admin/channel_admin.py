@@ -22,10 +22,17 @@ class ChannelStates(StatesGroup):
 async def channels_menu(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
+    service = ChannelService(session)
+    channels = await service.list_channels()
+    if channels:
+        lines = [f"- {c.title or c.id} (<code>{c.id}</code>)" for c in channels]
+        text = "Administrar canales\n\n" + "\n".join(lines)
+    else:
+        text = "Administrar canales\n\nNo hay canales configurados."
     await update_menu(
         callback,
-        "Administrar canales",
-        get_admin_channels_kb(),
+        text,
+        get_admin_channels_kb(channels),
         session,
         "admin_channels",
     )
@@ -56,13 +63,22 @@ async def add_channel(message: Message, state: FSMContext, session: AsyncSession
     else:
         try:
             chat_id = int(message.text.strip())
+            chat = await message.bot.get_chat(chat_id)
+            title = chat.title
         except (TypeError, ValueError):
             await message.answer("No se pudo obtener el ID del canal. Intenta de nuevo.")
             return
     service = ChannelService(session)
     await service.add_channel(chat_id, title)
+    channels = await service.list_channels()
+    if channels:
+        lines = [f"- {c.title or c.id} (<code>{c.id}</code>)" for c in channels]
+        text = "Canal agregado.\n\n" + "\n".join(lines)
+    else:
+        text = f"Canal {chat_id} agregado."
     await message.answer(
-        f"Canal {chat_id} agregado.", reply_markup=get_admin_channels_kb()
+        text,
+        reply_markup=get_admin_channels_kb(channels),
     )
     await state.clear()
 
@@ -94,11 +110,41 @@ async def set_wait_time(callback: CallbackQuery, session: AsyncSession):
         session.add(config)
     config.free_channel_wait_time_minutes = minutes
     await session.commit()
+    service = ChannelService(session)
+    channels = await service.list_channels()
+    if channels:
+        lines = [f"- {c.title or c.id} (<code>{c.id}</code>)" for c in channels]
+        text = f"Tiempo actualizado a {minutes} minutos.\n\n" + "\n".join(lines)
+    else:
+        text = f"Tiempo actualizado a {minutes} minutos."
     await update_menu(
         callback,
-        f"Tiempo actualizado a {minutes} minutos.",
-        get_admin_channels_kb(),
+        text,
+        get_admin_channels_kb(channels),
         session,
         "admin_channels",
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("remove_channel_"))
+async def remove_channel(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    chat_id = int(callback.data.split("_")[-1])
+    service = ChannelService(session)
+    await service.remove_channel(chat_id)
+    channels = await service.list_channels()
+    if channels:
+        lines = [f"- {c.title or c.id} (<code>{c.id}</code>)" for c in channels]
+        text = "Canales actualizados:\n\n" + "\n".join(lines)
+    else:
+        text = "No hay canales configurados."
+    await update_menu(
+        callback,
+        text,
+        get_admin_channels_kb(channels),
+        session,
+        "admin_channels",
+    )
+    await callback.answer("Canal eliminado")

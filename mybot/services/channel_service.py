@@ -25,3 +25,9 @@ class ChannelService:
     async def list_channels(self) -> list[Channel]:
         result = await self.session.execute(select(Channel))
         return list(result.scalars().all())
+
+    async def remove_channel(self, chat_id: int) -> None:
+        channel = await self.session.get(Channel, chat_id)
+        if channel:
+            await self.session.delete(channel)
+            await self.session.commit()
