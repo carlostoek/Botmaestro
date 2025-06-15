@@ -6,6 +6,7 @@ from .reward_service import RewardService
 from .subscription_service import SubscriptionService
 from .token_service import TokenService
 from .config_service import ConfigService
+from .plan_service import SubscriptionPlanService
 
 __all__ = [
     "AchievementService",
@@ -16,4 +17,5 @@ __all__ = [
     "SubscriptionService",
     "TokenService",
     "ConfigService",
+    "SubscriptionPlanService",
 ]

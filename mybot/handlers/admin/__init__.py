@@ -2,10 +2,12 @@ from .admin_menu import router as admin_router
 from .vip_menu import router as vip_router
 from .free_menu import router as free_router
 from .config_menu import router as config_router
+from .tarifas_menu import router as tarifas_router
 
 __all__ = [
     "admin_router",
     "vip_router",
     "free_router",
     "config_router",
+    "tarifas_router",
 ]
