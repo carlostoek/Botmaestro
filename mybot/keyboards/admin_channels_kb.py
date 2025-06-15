@@ -1,8 +1,12 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
-def get_admin_channels_kb():
+def get_admin_channels_kb(channels: list | None = None):
     builder = InlineKeyboardBuilder()
+    if channels:
+        for channel in channels:
+            label = channel.title or str(channel.id)
+            builder.button(text=f"❌ {label}", callback_data=f"remove_channel_{channel.id}")
     builder.button(text="➕ Agregar Canal", callback_data="admin_add_channel")
     builder.button(text="⏱ Configurar Espera", callback_data="admin_wait_time")
     builder.button(text="🔙 Volver", callback_data="admin_back")
