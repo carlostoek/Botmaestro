@@ -1,13 +1,14 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
+from aiogram.client.bot import DefaultBotProperties
 
 from handlers import start, admin, vip, free_user
 from utils.config import BOT_TOKEN
 
 
 async def main() -> None:
-    bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
+    bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
 
     dp.include_router(start.router)
