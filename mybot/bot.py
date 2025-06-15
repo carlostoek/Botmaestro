@@ -3,8 +3,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
 
-from handlers import start, admin, vip, free_user
-from handlers.vip import gamification
+from handlers import start, admin, free_user
+from handlers.vip import menu as vip, gamification
 from utils.config import BOT_TOKEN
 
 
