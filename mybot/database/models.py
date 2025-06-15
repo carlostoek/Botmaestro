@@ -78,13 +78,15 @@ class Subscription(AsyncAttrs, Base):
 
 
 class Token(AsyncAttrs, Base):
-    """Invitation tokens used to activate a subscription."""
+    """Invitation tokens used to activate a subscription plan."""
 
     __tablename__ = "tokens"
 
     token = Column(String, primary_key=True, unique=True)
     duration_days = Column(Integer, nullable=False)
-    used = Column(Boolean, default=False)
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+    status = Column(String, default="available")
 
 
 class Config(AsyncAttrs, Base):
