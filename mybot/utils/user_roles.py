@@ -7,8 +7,8 @@ def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
 
 
-async def is_vip(bot: Bot, user_id: int) -> bool:
-    """Check if the user is subscribed to the VIP channel."""
+async def is_vip_member(bot: Bot, user_id: int) -> bool:
+    """Check if the user currently belongs to the VIP channel."""
     if not VIP_CHANNEL_ID:
         return False
     try:
@@ -16,3 +16,7 @@ async def is_vip(bot: Bot, user_id: int) -> bool:
         return member.status in {"member", "administrator", "creator"}
     except Exception:
         return False
+
+
+# Backwards compatibility
+is_vip = is_vip_member

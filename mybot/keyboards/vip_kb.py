@@ -2,9 +2,10 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def get_vip_kb():
-    """Return a minimal VIP subscriber menu."""
+    """Keyboard for regular VIP users."""
 
     builder = InlineKeyboardBuilder()
-    # Single button for VIP subscribers
-    builder.button(text="Botón de suscriptor VIP", callback_data="vip_button")
+    builder.button(text="🧾 Mi Suscripción", callback_data="vip_subscription")
+    builder.button(text="🎮 Juego del Diván", callback_data="vip_game")
+    builder.adjust(1)
     return builder.as_markup()

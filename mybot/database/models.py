@@ -67,6 +67,30 @@ class Event(AsyncAttrs, Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class VipSubscription(AsyncAttrs, Base):
+    __tablename__ = "vip_subscriptions"
+    user_id = Column(BigInteger, primary_key=True)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+
+class InviteToken(AsyncAttrs, Base):
+    __tablename__ = "invite_tokens"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String, unique=True, nullable=False)
+    created_by = Column(BigInteger, nullable=False)
+    used_by = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    used_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+
+
+class ConfigEntry(AsyncAttrs, Base):
+    __tablename__ = "config_entries"
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=True)
+
+
 # Funciones para manejar el estado del menú del usuario
 async def get_user_menu_state(session, user_id: int) -> str:
     result = await session.execute(select(User).where(User.id == user_id))
