@@ -41,3 +41,22 @@ class AdminTariffStates(StatesGroup):
     waiting_for_tariff_duration = State()
     waiting_for_tariff_price = State()
     waiting_for_tariff_name = State()
+
+
+class AdminUserStates(StatesGroup):
+    """States for admin user management actions."""
+
+    assigning_points_amount = State()
+    search_user_query = State()
+
+
+class AdminContentStates(StatesGroup):
+    """States related to posting content to channels."""
+
+    waiting_for_channel_post_text = State()
+
+
+class AdminConfigStates(StatesGroup):
+    """States for bot configuration options."""
+
+    waiting_for_reaction_buttons = State()

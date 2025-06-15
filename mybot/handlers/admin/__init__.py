@@ -3,6 +3,7 @@ from .vip_menu import router as vip_router
 from .free_menu import router as free_router
 from .config_menu import router as config_router
 from .subscription_plans import router as subscription_plans_router
+from .game_admin import router as game_admin_router
 
 __all__ = [
     "admin_router",
@@ -10,4 +11,5 @@ __all__ = [
     "free_router",
     "config_router",
     "subscription_plans_router",
+    "game_admin_router",
 ]

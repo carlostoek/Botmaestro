@@ -63,15 +63,24 @@ def get_ranking_keyboard():
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
-def get_reaction_keyboard(message_id: int):
-    """Returns an inline keyboard with like/dislike buttons for channel posts."""
+def get_reaction_keyboard(message_id: int, like_text: str = "👍 Me gusta", dislike_text: str = "👎 No me gusta"):
+    """Return an inline keyboard with like/dislike buttons for channel posts."""
     keyboard = [
         [
-            InlineKeyboardButton(text="👍 Me gusta", callback_data=f"reaction_like_{message_id}"),
-            InlineKeyboardButton(text="👎 No me gusta", callback_data=f"reaction_dislike_{message_id}")
+            InlineKeyboardButton(text=like_text, callback_data=f"reaction_like_{message_id}"),
+            InlineKeyboardButton(text=dislike_text, callback_data=f"reaction_dislike_{message_id}")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_custom_reaction_keyboard(message_id: int, buttons: list[str]) -> InlineKeyboardMarkup:
+    """Return an inline keyboard using custom button texts for reactions."""
+    if len(buttons) >= 2:
+        like, dislike = buttons[0], buttons[1]
+    else:
+        like, dislike = "👍", "👎"
+    return get_reaction_keyboard(message_id, like, dislike)
 
 def get_admin_main_keyboard():
     """Returns the top level keyboard for admin actions."""
@@ -105,6 +114,7 @@ def get_admin_manage_content_keyboard():
         [InlineKeyboardButton(text="🎁 Recompensas (Catálogo VIP)", callback_data="admin_content_rewards")],
         [InlineKeyboardButton(text="📦 Subastas", callback_data="admin_content_auctions")],
         [InlineKeyboardButton(text="🎁 Regalos Diarios", callback_data="admin_content_daily_gifts")],
+        [InlineKeyboardButton(text="📝 Publicar en Canal", callback_data="admin_send_channel_post")],
         [InlineKeyboardButton(text="🔙 Volver al Menú Principal de Administrador", callback_data="admin_main_menu")]
     ])
     return keyboard
