@@ -116,6 +116,21 @@ class ConfigEntry(AsyncAttrs, Base):
     value = Column(String, nullable=True)
 
 
+class BotConfig(AsyncAttrs, Base):
+    __tablename__ = "bot_config"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    free_channel_wait_time_minutes = Column(Integer, default=0)
+
+
+class PendingChannelRequest(AsyncAttrs, Base):
+    __tablename__ = "pending_channel_requests"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False)
+    chat_id = Column(BigInteger, nullable=False)
+    request_timestamp = Column(DateTime, default=func.now())
+    approved = Column(Boolean, default=False)
+
+
 # Funciones para manejar el estado del menú del usuario
 async def get_user_menu_state(session, user_id: int) -> str:
     result = await session.execute(select(User).where(User.id == user_id))
