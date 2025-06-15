@@ -1,5 +1,6 @@
 # database/models.py
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text
+from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey
+from uuid import uuid4
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import AsyncAttrs
@@ -26,6 +27,7 @@ class User(AsyncAttrs, Base):
     # Role management and VIP expiration
     role = Column(String, default="free")
     vip_expires_at = Column(DateTime, nullable=True)
+    last_reminder_sent_at = Column(DateTime, nullable=True)
     
     # ¡NUEVA COLUMNA para el estado del menú!
     menu_state = Column(String, default="root") # e.g., "root", "profile", "missions", "rewards"
@@ -115,14 +117,26 @@ class SubscriptionToken(AsyncAttrs, Base):
 
 
 class Token(AsyncAttrs, Base):
-    """VIP activation tokens for offline payments."""
+    """VIP activation tokens linked to tariffs."""
 
     __tablename__ = "tokens"
 
-    token_id = Column(String, primary_key=True)
-    subscription_duration = Column(String, nullable=False)
-    created_at = Column(DateTime, default=func.now())
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    token_string = Column(String, unique=True)
+    tariff_id = Column(Integer, ForeignKey("tariffs.id"))
+    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=True)
+    generated_at = Column(DateTime, default=func.now())
+    activated_at = Column(DateTime, nullable=True)
     is_used = Column(Boolean, default=False)
+
+
+class Tariff(AsyncAttrs, Base):
+    __tablename__ = "tariffs"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    duration_days = Column(Integer)
+    price = Column(Integer)
 
 
 class ConfigEntry(AsyncAttrs, Base):

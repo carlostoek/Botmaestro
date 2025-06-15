@@ -5,7 +5,7 @@ from secrets import token_urlsafe
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models import InviteToken, SubscriptionToken, Token
+from database.models import InviteToken, SubscriptionToken, Token, Tariff
 
 
 class TokenService:
@@ -20,6 +20,21 @@ class TokenService:
         await self.session.commit()
         await self.session.refresh(obj)
         return obj
+
+    async def activate_token(self, token_string: str, user_id: int) -> int:
+        stmt = select(Token).where(Token.token_string == token_string)
+        result = await self.session.execute(stmt)
+        token = result.scalar_one_or_none()
+        if not token or token.is_used:
+            raise ValueError("invalid token")
+        tariff = await self.session.get(Tariff, token.tariff_id)
+        if not tariff:
+            raise ValueError("tariff not found")
+        token.is_used = True
+        token.user_id = user_id
+        token.activated_at = datetime.utcnow()
+        await self.session.commit()
+        return tariff.duration_days
 
     async def use_token(self, token: str, user_id: int) -> bool:
         stmt = select(InviteToken).where(InviteToken.token == token)
@@ -53,14 +68,17 @@ class TokenService:
 
 
 async def validate_token(token: str, session: AsyncSession) -> str | None:
-    """Validate a VIP activation token and mark it as used."""
+    """Validate a legacy VIP activation token and mark it as used."""
 
-    stmt = select(Token).where(Token.token_id == token)
+    stmt = select(Token).where(Token.token_string == token)
     result = await session.execute(stmt)
     obj = result.scalar_one_or_none()
     if not obj or obj.is_used:
         return None
+    tariff = await session.get(Tariff, obj.tariff_id)
+    if not tariff:
+        return None
     obj.is_used = True
     await session.commit()
-    return obj.subscription_duration
+    return tariff.duration_days
 

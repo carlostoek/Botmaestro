@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,10 @@ from utils.keyboard_utils import (
     get_admin_manage_content_keyboard,
 )
 from keyboards.common import get_back_kb
+from keyboards.admin_vip_config_kb import get_tariff_select_kb
+from database.models import Tariff, Token
+from uuid import uuid4
+from sqlalchemy import select
 from utils.messages import BOT_MESSAGES
 from utils.menu_utils import send_menu, update_menu
 from database.models import get_user_menu_state
@@ -28,6 +32,33 @@ router.include_router(free_router)
 router.include_router(config_router)
 router.include_router(subscription_plans_router)
 router.include_router(game_router)
+
+
+@router.message(Command("admin_generate_token"))
+async def admin_generate_token_cmd(message: Message, session: AsyncSession, bot: Bot):
+    if not is_admin(message.from_user.id):
+        return
+    result = await session.execute(select(Tariff))
+    tariffs = result.scalars().all()
+    await message.answer(
+        "Elige la tarifa para generar token:",
+        reply_markup=get_tariff_select_kb(tariffs),
+    )
+
+
+@router.callback_query(F.data.startswith("generate_token_"))
+async def generate_token_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    tariff_id = int(callback.data.split("_")[-1])
+    token_string = str(uuid4())
+    token = Token(token_string=token_string, tariff_id=tariff_id)
+    session.add(token)
+    await session.commit()
+    bot_username = (await bot.get_me()).username
+    link = f"https://t.me/{bot_username}?start={token_string}"
+    await callback.message.edit_text(f"Enlace generado: {link}")
+    await callback.answer()
 
 
 @router.message(CommandStart())
