@@ -1,33 +1,55 @@
+from datetime import datetime, timedelta
 from aiogram import Router, Bot
 from aiogram.filters import CommandStart
 from aiogram.types import Message
-from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.filters.command import CommandObject
-from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from services import SubscriptionService, SubscriptionPlanService, TokenService
+from database.models import User
+from services.token_service import TokenService
+from utils.config import VIP_CHANNEL_ID
 
 router = Router()
 
+VIP_CHANNEL_ID_CONST = VIP_CHANNEL_ID
 
 @router.message(CommandStart(deep_link=True))
 async def start_with_token(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
-    token = command.args
-    if not token:
+    token_string = command.args
+    if not token_string:
         return
-    token_service = TokenService(session)
-    plan_token = await token_service.redeem_subscription_token(token, message.from_user.id)
-    if not plan_token:
+
+    service = TokenService(session)
+    try:
+        duration = await service.activate_token(token_string, message.from_user.id)
+    except Exception:
         await message.answer("Token inválido o ya utilizado.")
         return
 
-    plan_service = SubscriptionPlanService(session)
-    plan = await plan_service.get_plan_by_id(plan_token.plan_id)
-    if not plan:
-        await message.answer("Plan no encontrado.")
-        return
+    user = await session.get(User, message.from_user.id)
+    if not user:
+        user = User(
+            id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+        )
+        session.add(user)
 
-    sub_service = SubscriptionService(session)
-    expires_at = datetime.utcnow() + timedelta(days=plan.duration_days)
-    await sub_service.create_subscription(message.from_user.id, expires_at)
-    await message.answer("Suscripción activada correctamente!")
+    user.role = "vip"
+    user.vip_expires_at = datetime.utcnow() + timedelta(days=duration)
+    user.last_reminder_sent_at = None
+    await session.commit()
+
+    invite_link = None
+    if VIP_CHANNEL_ID_CONST:
+        try:
+            link = await bot.create_chat_invite_link(VIP_CHANNEL_ID_CONST, member_limit=1)
+            invite_link = link.invite_link
+        except Exception:
+            invite_link = None
+
+    if invite_link:
+        await message.answer(f"¡Bienvenido! Únete a nuestro canal VIP: {invite_link}")
+    else:
+        await message.answer("Suscripción activada correctamente!")

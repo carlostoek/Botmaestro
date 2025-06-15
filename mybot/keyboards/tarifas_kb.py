@@ -12,6 +12,7 @@ def get_tarifas_kb():
 def get_duration_kb():
     builder = InlineKeyboardBuilder()
     builder.button(text="1 D\u00eda", callback_data="plan_dur_1")
+    builder.button(text="2 D\u00edas", callback_data="plan_dur_2")
     builder.button(text="1 Semana", callback_data="plan_dur_7")
     builder.button(text="2 Semanas", callback_data="plan_dur_14")
     builder.button(text="1 Mes", callback_data="plan_dur_30")

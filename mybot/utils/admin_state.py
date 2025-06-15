@@ -1,6 +1,8 @@
 from collections import defaultdict
 from typing import Dict, List
 
+from aiogram.fsm.state import State, StatesGroup
+
 # Simple in-memory stack of admin menu states per user
 _user_states: Dict[int, List[str]] = defaultdict(list)
 
@@ -31,3 +33,11 @@ def current_state(user_id: int) -> str:
     """Return the current state for the user."""
     stack = _user_states.get(user_id, ["main"])
     return stack[-1]
+
+
+class AdminTariffStates(StatesGroup):
+    """States for the admin tariff configuration flow."""
+
+    waiting_for_tariff_duration = State()
+    waiting_for_tariff_price = State()
+    waiting_for_tariff_name = State()
