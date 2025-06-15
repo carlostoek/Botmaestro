@@ -5,10 +5,12 @@ from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from keyboards.vip_kb import get_vip_kb
+from .game_menu import router as game_router
 from utils.user_roles import is_vip_member
 from services.subscription_service import SubscriptionService
 
 router = Router()
+router.include_router(game_router)
 
 
 @router.message(Command("vip_menu"))
