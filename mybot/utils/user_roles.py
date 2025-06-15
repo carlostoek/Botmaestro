@@ -1,5 +1,5 @@
 from aiogram import Bot
-from .config import ADMIN_IDS, VIP_CHANNEL_ID
+from .config import ADMIN_IDS, VIP_CHANNEL_ID, VIP_IDS
 
 
 def is_admin(user_id: int) -> bool:
@@ -9,6 +9,8 @@ def is_admin(user_id: int) -> bool:
 
 async def is_vip_member(bot: Bot, user_id: int) -> bool:
     """Return True if the user currently belongs to the VIP channel."""
+    if user_id in VIP_IDS:
+        return True
     if not VIP_CHANNEL_ID:
         return False
     try:
