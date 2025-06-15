@@ -4,7 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 def get_tarifas_kb():
     builder = InlineKeyboardBuilder()
     builder.button(text="➕ Nueva Tarifa", callback_data="tarifa_new")
-    builder.button(text="🔙 Volver", callback_data="admin_config")
+    builder.button(text="🔙 Volver", callback_data="vip_config")
     builder.adjust(1)
     return builder.as_markup()
 

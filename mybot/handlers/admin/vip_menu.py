@@ -6,6 +6,7 @@ from datetime import datetime
 
 from utils.user_roles import is_admin, is_vip_member
 from keyboards.admin_vip_kb import get_admin_vip_kb
+from keyboards.admin_vip_config_kb import get_admin_vip_config_kb
 from keyboards.vip_kb import get_vip_kb
 from services import (
     TokenService,
@@ -143,9 +144,9 @@ async def vip_config(callback: CallbackQuery, session: AsyncSession):
     await update_menu(
         callback,
         f"Precio actual del VIP: {price_text}",
-        get_admin_vip_kb(),
+        get_admin_vip_config_kb(),
         session,
-        "admin_vip",
+        "vip_config",
     )
     await callback.answer()
 
