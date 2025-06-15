@@ -10,7 +10,7 @@ router = Router()
 
 @router.message(Command("subscribe"))
 async def subscription_menu(message: Message):
-    if is_admin(message.from_user.id) or is_vip(message.from_user.id):
+    if is_admin(message.from_user.id) or await is_vip(message.bot, message.from_user.id):
         return
     await message.answer(
         "Menú para usuarios del canal free",

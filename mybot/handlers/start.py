@@ -18,7 +18,7 @@ async def cmd_start(message: Message):
             "Bienvenido, administrador!",
             reply_markup=get_admin_kb(),
         )
-    elif is_vip(user_id):
+    elif await is_vip(message.bot, user_id):
         await message.answer(
             "Bienvenido, suscriptor VIP!",
             reply_markup=get_vip_kb(),
