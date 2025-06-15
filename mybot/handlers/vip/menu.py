@@ -9,6 +9,7 @@ from keyboards.vip_kb import get_vip_kb
 from keyboards.vip_game_kb import get_game_menu_kb
 from utils.user_roles import is_vip_member
 from utils.keyboard_utils import get_back_keyboard
+from utils.messages import BOT_MESSAGES
 from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
 from services.mission_service import MissionService
@@ -74,6 +75,22 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
 
     await callback.message.edit_text(
         profile_message, reply_markup=get_back_keyboard("vip_game")
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "gain_points")
+async def gain_points(callback: CallbackQuery, session: AsyncSession):
+    """Show information on how to earn points in the game."""
+    if not await is_vip_member(callback.bot, callback.from_user.id):
+        return await callback.answer()
+
+    await callback.message.edit_text(
+        BOT_MESSAGES.get(
+            "gain_points_instructions",
+            "Participa en misiones y actividades para ganar puntos."
+        ),
+        reply_markup=get_back_keyboard("vip_game")
     )
     await callback.answer()
 

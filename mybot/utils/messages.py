@@ -79,5 +79,6 @@ BOT_MESSAGES = {
     "menu_rewards_text": "¡Es hora de canjear tus puntos! Aquí tienes las recompensas disponibles:",
     "confirm_purchase_message": "¿Estás segur@ de que quieres canjear {reward_name} por {reward_cost} puntos?",
     "purchase_cancelled_message": "Compra cancelada. Puedes seguir explorando otras recompensas.",
+    "gain_points_instructions": "Puedes ganar puntos completando misiones y participando en las actividades del canal.",
     "unrecognized_command_text": "Comando no reconocido. Aquí está el menú principal:"
 }
