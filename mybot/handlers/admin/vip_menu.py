@@ -21,7 +21,7 @@ async def vip_menu(callback: CallbackQuery, session: AsyncSession):
         return await callback.answer()
     await update_menu(
         callback,
-        "Administración del VIP",
+        "El Diván",
         get_admin_vip_kb(),
         session,
         "admin_vip",
