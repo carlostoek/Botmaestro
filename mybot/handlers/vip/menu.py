@@ -59,7 +59,14 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
     user_id = callback.from_user.id
     user: User | None = await session.get(User, user_id)
     if not user:
-        return await callback.answer()
+        user = User(
+            id=user_id,
+            username=callback.from_user.username,
+            first_name=callback.from_user.first_name,
+            last_name=callback.from_user.last_name,
+        )
+        session.add(user)
+        await session.commit()
 
     mission_service = MissionService(session)
     active_missions = await mission_service.get_active_missions(user_id=user_id)
