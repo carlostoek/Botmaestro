@@ -37,6 +37,10 @@ BOT_MESSAGES = {
     "reward_purchase_success": "🎉 ¡Recompensa conseguida! Algo bonito está por llegar.",
     "reward_purchase_failed": "No pudimos procesar tu elección. Inténtalo más tarde.",
 
+    # Niveles
+    "level_up_notification": "🎉 ¡Subiste a Nivel {level}: {level_name}! {reward}",
+    "special_level_reward": "✨ Recompensa especial por alcanzar el nivel {level}! {reward}",
+
     # Mensajes de ranking (Unificados)
     "ranking_title": "🏆 *Tabla de Posiciones*",
     "ranking_entry": "#{rank}. @{username} - Puntos: `{points}`, Nivel: `{level}`",

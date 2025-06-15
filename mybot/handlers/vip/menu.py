@@ -71,7 +71,7 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
     mission_service = MissionService(session)
     active_missions = await mission_service.get_active_missions(user_id=user_id)
 
-    profile_message = await get_profile_message(user, active_missions)
+    profile_message = await get_profile_message(user, active_missions, session)
 
     sub_service = SubscriptionService(session)
     sub = await sub_service.get_subscription(user_id)

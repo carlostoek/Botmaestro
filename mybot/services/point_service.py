@@ -3,6 +3,7 @@ from sqlalchemy import select
 from database.models import User, UserProgress
 from utils.user_roles import get_points_multiplier
 from aiogram import Bot
+from services.level_service import LevelService
 import datetime
 import logging
 
@@ -77,6 +78,8 @@ class PointService:
         await self.session.commit()
         await self.session.refresh(progress)
         await self.session.refresh(user)
+        level_service = LevelService(self.session)
+        await level_service.check_for_level_up(user, bot=bot)
         logger.info(
             f"User {user_id} gained {total} points (base {points}, x{multiplier}). Total: {progress.total_points}"
         )

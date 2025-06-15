@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database.models import User, Mission, Reward, get_user_menu_state, set_user_menu_state
 from services.point_service import PointService
-from services.level_service import LevelService
 from services.achievement_service import AchievementService, ACHIEVEMENTS
 from services.mission_service import MissionService
 from services.reward_service import RewardService
@@ -57,12 +56,11 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
     if menu_type == "profile":
         user = await session.get(User, user_id)
         point_service = PointService(session)
-        level_service = LevelService(session)
         achievement_service = AchievementService(session)
         mission_service = MissionService(session)
         active_missions = await mission_service.get_active_missions(user_id=user_id) # Pasa el user_id para filtrar misiones
         
-        message_text = await get_profile_message(user, active_missions)
+        message_text = await get_profile_message(user, active_missions, session)
         keyboard = get_profile_keyboard()
         new_state = "profile"
     elif menu_type == "missions":
@@ -200,7 +198,6 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
 
     mission_service = MissionService(session)
     point_service = PointService(session)
-    level_service = LevelService(session)
     achievement_service = AchievementService(session)
 
     user = await session.get(User, user_id)
@@ -221,15 +218,12 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
 
     if completed:
         progress = await point_service.add_points(user_id, completed_mission_obj.points_reward, bot=bot)
-        leveled_up = await level_service.check_for_level_up(await session.get(User, user_id))
         
         # Opcional: Otorgar un logro por la primera misión
         if not user.missions_completed: # Si es la primera misión del usuario
              await achievement_service.grant_achievement(user_id, "first_mission")
 
         alert_message = f"🎉 ¡Misión '{completed_mission_obj.name}' completada! Ganaste `{completed_mission_obj.points_reward}` puntos."
-        if leveled_up:
-            alert_message += f"\n\n✨ ¡Felicidades! Has subido al nivel `{updated_user.level}`."
 
         await callback.answer(alert_message, show_alert=True)
 
@@ -257,7 +251,6 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
     # Puedes crear un ReactionService o integrar esto en PointService/MissionService
     point_service = PointService(session)
     mission_service = MissionService(session)
-    level_service = LevelService(session)
     achievement_service = AchievementService(session)
 
     # Puntos base por reacción
@@ -275,7 +268,6 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
 
     # Añadir los puntos base
     await point_service.add_points(user_id, base_points_for_reaction, bot=callback.bot)
-    leveled_up = await level_service.check_for_level_up(await session.get(User, user_id))
 
     # Marcar el mensaje como reaccionado por el usuario
     if user.channel_reactions is None:
@@ -304,13 +296,10 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
                 if completed:
                     mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**! Ganaste `{mission_obj.points_reward}` puntos adicionales."
                     await point_service.add_points(user_id, mission_obj.points_reward, bot=callback.bot)
-                    leveled_up = await level_service.check_for_level_up(await session.get(User, user_id)) or leveled_up
 
     alert_message = f"¡Reacción registrada! Ganaste `{base_points_for_reaction}` puntos."
     alert_message += mission_completed_message
 
-    if leveled_up:
-        alert_message += f"\n\n✨ ¡Felicidades! Has subido al nivel `{updated_user.level}`."
 
     await callback.answer(alert_message, show_alert=True)
     logger.info(f"User {user_id} reacted with {reaction_type} to message {target_message_id}. Points awarded.")
@@ -324,11 +313,10 @@ async def show_profile_from_reply_keyboard(message: Message, session: AsyncSessi
     user = await session.get(User, user_id)
     if user:
         point_service = PointService(session)
-        level_service = LevelService(session)
         achievement_service = AchievementService(session)
         mission_service = MissionService(session)
         active_missions = await mission_service.get_active_missions(user_id=user_id)
-        profile_message = await get_profile_message(user, active_missions)
+        profile_message = await get_profile_message(user, active_missions, session)
         await set_user_menu_state(session, user_id, "profile")
         # Mostrar el perfil con su teclado INLINE específico (para Volver y Menú Principal)
         await message.answer(profile_message, reply_markup=get_profile_keyboard())

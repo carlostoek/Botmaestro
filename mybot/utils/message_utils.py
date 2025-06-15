@@ -1,13 +1,15 @@
 # utils/message_utils.py
 from database.models import User, Mission, Reward
-from services.level_service import get_level_threshold
+from services.level_service import LevelService
+from sqlalchemy.ext.asyncio import AsyncSession
 from services.achievement_service import ACHIEVEMENTS
 from utils.messages import BOT_MESSAGES
 import datetime
 
-async def get_profile_message(user: User, active_missions: list[Mission]) -> str:
+async def get_profile_message(user: User, active_missions: list[Mission], session: AsyncSession) -> str:
     points_to_next_level_text = ""
-    next_level_threshold = get_level_threshold(user.level + 1)
+    level_service = LevelService(session)
+    next_level_threshold = await level_service.get_level_threshold(user.level + 1)
     if next_level_threshold != float('inf'):
         points_needed = next_level_threshold - user.points
         # Usar el mensaje personalizado para puntos al siguiente nivel
