@@ -6,8 +6,9 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from database.setup import init_db, get_session
 
-from handlers import start, admin, free_user
-from handlers.vip import menu as vip, gamification
+from handlers import start, free_user
+from handlers.vip import menu as vip
+from handlers.admin import admin_router, vip_router, free_router as admin_free_router, config_router
 from utils.config import BOT_TOKEN
 
 
@@ -30,9 +31,11 @@ async def main() -> None:
     dp.callback_query.outer_middleware(session_middleware_factory(Session, bot))
 
     dp.include_router(start.router)
-    dp.include_router(admin.router)
+    dp.include_router(admin_router)
     dp.include_router(vip.router)
-    dp.include_router(gamification.router)
+    dp.include_router(vip_router)
+    dp.include_router(admin_free_router)
+    dp.include_router(config_router)
     dp.include_router(free_user.router)
 
     await dp.start_polling(bot)

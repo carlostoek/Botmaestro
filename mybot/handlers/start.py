@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from keyboards.admin_kb import get_admin_kb
+from keyboards.admin_main_kb import get_admin_main_kb
 from keyboards.vip_kb import get_vip_kb
 from keyboards.subscription_kb import get_subscription_kb
 from utils.user_roles import is_admin, is_vip
@@ -16,7 +16,7 @@ async def cmd_start(message: Message):
     if is_admin(user_id):
         await message.answer(
             "Bienvenido, administrador!",
-            reply_markup=get_admin_kb(),
+            reply_markup=get_admin_main_kb(),
         )
     elif await is_vip(message.bot, user_id):
         await message.answer(
