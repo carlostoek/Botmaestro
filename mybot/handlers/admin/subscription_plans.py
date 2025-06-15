@@ -67,9 +67,11 @@ async def plan_price(message: Message, state: FSMContext, session: AsyncSession)
         return
     service = SubscriptionPlanService(session)
     await message.delete()
-    await service.create_plan(message.from_user.id, data["name"], price, data["duration_days"])
+    plan = await service.create_plan(
+        message.from_user.id, data["name"], price, data["duration_days"]
+    )
     await message.answer(
-        "✅ Plan creado correctamente.",
+        f"Tarifa creada:\nNombre: {plan.name}\nPrecio: {plan.price}\nDuración: {plan.duration_days} días",
         reply_markup=get_back_kb("config_tarifas"),
     )
     await state.clear()

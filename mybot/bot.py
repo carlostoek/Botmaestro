@@ -7,6 +7,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from database.setup import init_db, get_session
 
 from handlers import start, free_user
+from handlers.user import start_token
 from handlers.vip import menu as vip
 from handlers.admin import admin_router
 from utils.config import BOT_TOKEN
@@ -30,6 +31,7 @@ async def main() -> None:
     dp.message.outer_middleware(session_middleware_factory(Session, bot))
     dp.callback_query.outer_middleware(session_middleware_factory(Session, bot))
 
+    dp.include_router(start_token.router)
     dp.include_router(start.router)
     dp.include_router(admin_router)
     dp.include_router(vip.router)

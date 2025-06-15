@@ -88,11 +88,22 @@ class InviteToken(AsyncAttrs, Base):
 class SubscriptionPlan(AsyncAttrs, Base):
     __tablename__ = "subscription_plans"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    token = Column(String, unique=True, nullable=False)
+    token = Column(String, unique=True, nullable=True)
     name = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
     duration_days = Column(Integer, nullable=False)
     status = Column(String, default="available")
+    created_by = Column(BigInteger, nullable=False)
+    used_by = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    used_at = Column(DateTime, nullable=True)
+
+
+class SubscriptionToken(AsyncAttrs, Base):
+    __tablename__ = "subscription_tokens"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String, unique=True, nullable=False)
+    plan_id = Column(Integer, nullable=False)
     created_by = Column(BigInteger, nullable=False)
     used_by = Column(BigInteger, nullable=True)
     created_at = Column(DateTime, default=func.now())
