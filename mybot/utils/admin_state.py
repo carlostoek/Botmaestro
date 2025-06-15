@@ -60,3 +60,14 @@ class AdminConfigStates(StatesGroup):
     """States for bot configuration options."""
 
     waiting_for_reaction_buttons = State()
+
+
+class AdminMissionStates(StatesGroup):
+    """States for creating missions from the admin panel."""
+
+    creating_mission_name = State()
+    creating_mission_description = State()
+    creating_mission_points = State()
+    creating_mission_type = State()
+    creating_mission_requires_action = State()
+    creating_mission_action_data = State()

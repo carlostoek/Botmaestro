@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -20,10 +20,11 @@ from utils.keyboard_utils import (
     get_admin_content_daily_gifts_keyboard,
     get_admin_content_minigames_keyboard,
 )
-from utils.admin_state import AdminUserStates, AdminContentStates
+from utils.admin_state import AdminUserStates, AdminContentStates, AdminMissionStates
+from services.mission_service import MissionService
+from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
-from database.models import User
 from utils.config import VIP_CHANNEL_ID
 
 router = Router()
@@ -238,6 +239,178 @@ async def admin_content_missions(callback: CallbackQuery, session: AsyncSession)
         get_admin_content_missions_keyboard(),
         session,
         "admin_content_missions",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_create_mission")
+async def admin_start_create_mission(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Ingresa el nombre de la misión:",
+        reply_markup=get_back_keyboard("admin_content_missions"),
+    )
+    await state.set_state(AdminMissionStates.creating_mission_name)
+    await callback.answer()
+
+
+@router.message(AdminMissionStates.creating_mission_name)
+async def admin_process_mission_name(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(name=message.text)
+    await message.answer("Ingresa la descripción de la misión:")
+    await state.set_state(AdminMissionStates.creating_mission_description)
+
+
+@router.message(AdminMissionStates.creating_mission_description)
+async def admin_process_mission_description(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(description=message.text)
+    await message.answer("¿Cuántos puntos otorgará la misión?")
+    await state.set_state(AdminMissionStates.creating_mission_points)
+
+
+@router.message(AdminMissionStates.creating_mission_points)
+async def admin_process_mission_points(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        points = int(message.text)
+    except ValueError:
+        await message.answer("Ingresa un número válido de puntos:")
+        return
+    await state.update_data(points_reward=points)
+    await message.answer(
+        "Tipo de misión (`daily`, `weekly`, `one_time`, `reaction`):"
+    )
+    await state.set_state(AdminMissionStates.creating_mission_type)
+
+
+@router.message(AdminMissionStates.creating_mission_type)
+async def admin_process_mission_type(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    mission_type = message.text.lower().strip()
+    if mission_type not in {"daily", "weekly", "one_time", "reaction"}:
+        await message.answer("Tipo inválido. Usa daily, weekly, one_time o reaction:")
+        return
+    await state.update_data(type=mission_type)
+    await message.answer("¿Requiere acción externa para completarse? (si/no):")
+    await state.set_state(AdminMissionStates.creating_mission_requires_action)
+
+
+@router.message(AdminMissionStates.creating_mission_requires_action)
+async def admin_process_requires_action(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    text = message.text.lower().strip()
+    requires_action = text in {"si", "sí", "s"}
+    await state.update_data(requires_action=requires_action)
+    await message.answer(
+        "Ingresa datos adicionales para la misión en formato JSON o escribe 'no' para omitir:"
+    )
+    await state.set_state(AdminMissionStates.creating_mission_action_data)
+
+
+@router.message(AdminMissionStates.creating_mission_action_data)
+async def admin_process_action_data(
+    message: Message, state: FSMContext, session: AsyncSession
+):
+    if not is_admin(message.from_user.id):
+        return
+    action_data_text = message.text.strip()
+    action_data = None
+    if action_data_text.lower() not in {"no", "none", "-"}:
+        try:
+            import json
+
+            action_data = json.loads(action_data_text)
+        except Exception:
+            action_data = {"data": action_data_text}
+    await state.update_data(action_data=action_data)
+    data = await state.get_data()
+    mission_service = MissionService(session)
+    await mission_service.create_mission(
+        data["name"],
+        data["description"],
+        data["points_reward"],
+        data["type"],
+        data.get("requires_action", False),
+        data.get("action_data"),
+    )
+    await message.answer(
+        "✅ Misión creada.", reply_markup=get_admin_content_missions_keyboard()
+    )
+    await state.clear()
+
+
+@router.callback_query(F.data == "admin_toggle_mission")
+async def admin_toggle_mission_menu(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    result = await session.execute(select(Mission))
+    missions = result.scalars().all()
+    keyboard = []
+    for m in missions:
+        status = "✅" if m.is_active else "❌"
+        keyboard.append(
+            [InlineKeyboardButton(text=f"{status} {m.name}", callback_data=f"toggle_mission_{m.id}")]
+        )
+    keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_missions")])
+    await callback.message.edit_text(
+        "Activar o desactivar misiones:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("toggle_mission_"))
+async def toggle_mission_status(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    mission_id = callback.data.split("toggle_mission_")[-1]
+    mission_service = MissionService(session)
+    mission = await mission_service.get_mission_by_id(mission_id)
+    if not mission:
+        await callback.answer("Misión no encontrada", show_alert=True)
+        return
+    await mission_service.toggle_mission_status(mission_id, not mission.is_active)
+    status = "activada" if not mission.is_active else "desactivada"
+    await callback.answer(f"Misión {status}", show_alert=True)
+    # Refresh list
+    result = await session.execute(select(Mission))
+    missions = result.scalars().all()
+    keyboard = []
+    for m in missions:
+        status_icon = "✅" if m.is_active else "❌"
+        keyboard.append(
+            [InlineKeyboardButton(text=f"{status_icon} {m.name}", callback_data=f"toggle_mission_{m.id}")]
+        )
+    keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_missions")])
+    await callback.message.edit_text(
+        "Activar o desactivar misiones:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+    )
+
+
+@router.callback_query(F.data == "admin_view_active_missions")
+async def admin_view_active_missions(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    stmt = select(Mission).where(Mission.is_active == True)
+    result = await session.execute(stmt)
+    missions = result.scalars().all()
+    if missions:
+        lines = [f"- {m.name} ({m.type}) -> {m.points_reward} pts" for m in missions]
+        text = "Misiones activas:\n" + "\n".join(lines)
+    else:
+        text = "No hay misiones activas."
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_back_keyboard("admin_content_missions"),
     )
     await callback.answer()
 
