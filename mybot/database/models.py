@@ -151,6 +151,13 @@ class BotConfig(AsyncAttrs, Base):
     free_channel_wait_time_minutes = Column(Integer, default=0)
 
 
+class Channel(AsyncAttrs, Base):
+    __tablename__ = "channels"
+    id = Column(BigInteger, primary_key=True)  # Telegram chat ID
+    title = Column(String, nullable=True)
+
+
+
 class PendingChannelRequest(AsyncAttrs, Base):
     __tablename__ = "pending_channel_requests"
     id = Column(Integer, primary_key=True, autoincrement=True)

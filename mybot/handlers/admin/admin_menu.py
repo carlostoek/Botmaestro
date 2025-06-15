@@ -24,6 +24,7 @@ from database.models import get_user_menu_state
 from .vip_menu import router as vip_router
 from .free_menu import router as free_router
 from .config_menu import router as config_router
+from .channel_admin import router as channel_admin_router
 from .subscription_plans import router as subscription_plans_router
 from handlers.vip.gamification import router as game_router
 from .game_admin import router as game_admin_router
@@ -32,6 +33,7 @@ router = Router()
 router.include_router(vip_router)
 router.include_router(free_router)
 router.include_router(config_router)
+router.include_router(channel_admin_router)
 router.include_router(subscription_plans_router)
 router.include_router(game_router)
 router.include_router(game_admin_router)
@@ -176,6 +178,8 @@ IGNORED_CALLBACKS = {
     "admin_free",
     "admin_game",
     "admin_config",
+    "admin_channels",
+    "admin_wait_time",
     "admin_back",
     "admin_manage_users",
     "admin_manage_content",
