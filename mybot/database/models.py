@@ -1,5 +1,5 @@
 # database/models.py
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text
+from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import AsyncAttrs
@@ -77,6 +77,17 @@ class Subscription(AsyncAttrs, Base):
     end_date = Column(DateTime, nullable=False)
 
 
+class SubscriptionPlan(AsyncAttrs, Base):
+    """Available subscription plans."""
+
+    __tablename__ = "subscription_plans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    duration_days = Column(Integer, nullable=False)
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+
+
 class Token(AsyncAttrs, Base):
     """Invitation tokens used to activate a subscription plan."""
 
@@ -86,6 +97,7 @@ class Token(AsyncAttrs, Base):
     duration_days = Column(Integer, nullable=False)
     name = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
+    plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=True)
     status = Column(String, default="available")
 
 

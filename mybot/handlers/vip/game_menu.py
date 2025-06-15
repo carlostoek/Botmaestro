@@ -3,7 +3,10 @@ from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import User
+from datetime import datetime
+
 from services.mission_service import MissionService
+from services.subscription_service import SubscriptionService
 from utils.message_utils import get_profile_message
 from keyboards.vip_game_kb import get_game_menu_kb, get_profile_kb
 from utils.navigation import return_to_parent_menu
@@ -28,7 +31,14 @@ async def show_game_profile(callback: CallbackQuery, session: AsyncSession):
         return
     mission_service = MissionService(session)
     active_missions = await mission_service.get_active_missions(user_id=user_id)
-    text = await get_profile_message(user, active_missions)
+    profile_text = await get_profile_message(user, active_missions)
+    sub_service = SubscriptionService(session)
+    subscription = await sub_service.get_subscription(user_id)
+    if subscription and subscription.end_date > datetime.utcnow():
+        vip_status = f"✅ VIP activo hasta {subscription.end_date.date()}"
+    else:
+        vip_status = "❌ VIP expirado"
+    text = f"{vip_status}\n\n{profile_text}"
     await callback.message.edit_text(text, reply_markup=get_profile_kb())
     await callback.answer()
 

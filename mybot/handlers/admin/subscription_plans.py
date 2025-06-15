@@ -47,6 +47,7 @@ async def plan_name_input(message: Message):
     data = _waiting_name.pop(message.from_user.id)
     data["name"] = message.text.strip()
     _waiting_price[message.from_user.id] = data
+    await message.delete()
     await message.answer("Ingresa el precio del plan")
 
 
@@ -56,12 +57,15 @@ async def plan_price_input(message: Message, session: AsyncSession):
     try:
         price = int(message.text.strip())
     except ValueError:
+        await message.delete()
         await message.answer("Ingresa solo números para el precio")
         return
     service = TokenService(session)
-    plan = await service.create_plan(data["duration"], data["name"], price)
-    bot_username = (await message.bot.me()).username
-    link = f"https://t.me/{bot_username}?start={plan.token}"
-    await message.answer(f"Plan creado: {plan.name} - {plan.price}\nEnlace: {link}")
+    await service.add_subscription_plan(data["duration"], data["name"], price)
+    await message.delete()
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🔙 Volver", callback_data="config_plans")
+    builder.adjust(1)
+    await message.answer("✅ Plan creado correctamente.", reply_markup=builder.as_markup())
 
 

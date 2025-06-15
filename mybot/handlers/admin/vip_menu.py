@@ -22,7 +22,7 @@ _waiting_price: dict[int, str] = {}
 async def vip_menu(callback: CallbackQuery, session: AsyncSession):
     user_id = callback.from_user.id
     if is_admin(user_id):
-        await callback.message.edit_text("Adm. Diván", reply_markup=get_admin_vip_kb())
+        await callback.message.edit_text("El Diván", reply_markup=get_admin_vip_kb())
         await callback.answer()
         return
 
@@ -103,11 +103,44 @@ async def vip_admin_stats(callback: CallbackQuery, session: AsyncSession):
 async def vip_admin_gen_link(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
-    tokens = TokenService(session)
-    token = await tokens.generate_token(7)
+    service = TokenService(session)
+    plans = await service.get_plans()
+    if not plans:
+        await callback.message.edit_text(
+            "No hay planes disponibles", reply_markup=get_vip_admin_tools_kb()
+        )
+        return await callback.answer()
+
+    builder = InlineKeyboardBuilder()
+    for plan in plans:
+        builder.button(
+            text=f"{plan.name} - {plan.price}",
+            callback_data=f"vip_get_token:{plan.id}",
+        )
+    builder.button(text="🔙 Volver", callback_data="vip_admin_tools")
+    builder.adjust(1)
+    await callback.message.edit_text(
+        "Selecciona un plan para generar enlace",
+        reply_markup=builder.as_markup(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vip_get_token:"))
+async def vip_get_token(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    plan_id = int(callback.data.split(":", 1)[1])
+    service = TokenService(session)
+    token = await service.create_token_for_plan(plan_id)
     bot_username = (await callback.bot.me()).username
-    link = f"https://t.me/{bot_username}?start={token}"
-    await callback.message.edit_text(f"Enlace generado: {link}", reply_markup=get_vip_admin_tools_kb())
+    link = f"https://t.me/{bot_username}?start={token.token}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🔙 Volver", callback_data="vip_admin_tools")
+    builder.adjust(1)
+    await callback.message.edit_text(
+        f"Enlace generado: {link}", reply_markup=builder.as_markup()
+    )
     await callback.answer()
 
 
