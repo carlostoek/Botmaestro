@@ -67,6 +67,35 @@ class Event(AsyncAttrs, Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class Subscription(AsyncAttrs, Base):
+    """User subscription periods for the VIP channel."""
+
+    __tablename__ = "subscriptions"
+
+    user_id = Column(BigInteger, primary_key=True)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+
+
+class Token(AsyncAttrs, Base):
+    """Invitation tokens used to activate a subscription."""
+
+    __tablename__ = "tokens"
+
+    token = Column(String, primary_key=True, unique=True)
+    duration_days = Column(Integer, nullable=False)
+    used = Column(Boolean, default=False)
+
+
+class Config(AsyncAttrs, Base):
+    """Key/value configuration storage for VIP features."""
+
+    __tablename__ = "config"
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+
+
 # Funciones para manejar el estado del menú del usuario
 async def get_user_menu_state(session, user_id: int) -> str:
     result = await session.execute(select(User).where(User.id == user_id))
