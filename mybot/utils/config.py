@@ -13,8 +13,14 @@ if BOT_TOKEN == "YOUR_BOT_TOKEN" or not BOT_TOKEN:
         "BOT_TOKEN environment variable is not set or contains the default placeholder."
     )
 
-# Telegram user IDs of admins
-ADMIN_IDS: List[int] = [123456789]
+# Telegram user IDs of admins provided as a comma separated list in
+# the ``ADMIN_IDS`` environment variable. Falling back to an empty
+# list keeps the bot running even if no admins are configured.
+ADMIN_IDS: List[int] = [
+    int(uid) for uid in os.environ.get("ADMIN_IDS", "").split(";") if uid.strip()
+]
 
-# Telegram user IDs of VIP subscribers
-VIP_IDS: List[int] = [987654321]
+# Identifier of the VIP channel where subscribers are checked. This
+# must be set via the ``VIP_CHANNEL_ID`` environment variable. A value
+# of ``0`` disables VIP checks and treats all users as non‑VIP.
+VIP_CHANNEL_ID = int(os.environ.get("VIP_CHANNEL_ID", "0"))

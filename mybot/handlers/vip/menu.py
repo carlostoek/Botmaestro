@@ -10,7 +10,7 @@ router = Router()
 
 @router.message(Command("vip_menu"))
 async def vip_menu(message: Message):
-    if not is_vip(message.from_user.id):
+    if not await is_vip(message.bot, message.from_user.id):
         return
     await message.answer("Menú para suscriptores VIP", reply_markup=get_vip_kb())
 

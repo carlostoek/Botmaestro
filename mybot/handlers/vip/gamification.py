@@ -10,8 +10,15 @@ from utils.user_roles import is_vip
 
 router = Router()
 # Apply VIP filter so only VIP subscribers trigger these handlers
-router.message.filter(lambda m: is_vip(m.from_user.id))
-router.callback_query.filter(lambda c: is_vip(c.from_user.id))
+
+async def _check_vip_message(message: Message) -> bool:
+    return await is_vip(message.bot, message.from_user.id)
+
+async def _check_vip_callback(callback: CallbackQuery) -> bool:
+    return await is_vip(callback.bot, callback.from_user.id)
+
+router.message.filter(_check_vip_message)
+router.callback_query.filter(_check_vip_callback)
 
 _points = PointService()
 _levels = LevelService()
