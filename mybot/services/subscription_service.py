@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from database.models import Subscription
 
@@ -47,3 +47,14 @@ class SubscriptionService:
         stmt = select(Subscription).where(Subscription.end_date > now)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def count_total_subscriptions(self) -> int:
+        stmt = select(func.count()).select_from(Subscription)
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def count_expired_subscriptions(self) -> int:
+        now = datetime.utcnow()
+        stmt = select(func.count()).select_from(Subscription).where(Subscription.end_date <= now)
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
