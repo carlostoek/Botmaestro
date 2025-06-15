@@ -66,9 +66,7 @@ async def plan_price(message: Message, state: FSMContext, session: AsyncSession,
         return
     service = SubscriptionPlanService(session)
     plan = await service.create_plan(message.from_user.id, data["name"], price, data["duration_days"])
-    bot_username = (await bot.get_me()).username
-    link = f"https://t.me/{bot_username}?start={plan.token}"
     await message.answer(
-        f"Tarifa creada:\nNombre: {plan.name}\nPrecio: {plan.price}\nDuración: {plan.duration_days} días\nEnlace: {link}"
+        f"Tarifa creada:\nNombre: {plan.name}\nPrecio: {plan.price}\nDuración: {plan.duration_days} días"
     )
     await state.clear()
