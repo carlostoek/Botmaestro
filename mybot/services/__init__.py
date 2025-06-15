@@ -7,6 +7,7 @@ from .subscription_service import SubscriptionService
 from .token_service import TokenService
 from .config_service import ConfigService
 from .plan_service import SubscriptionPlanService
+from .scheduler import channel_request_scheduler
 
 __all__ = [
     "AchievementService",
@@ -18,4 +19,5 @@ __all__ = [
     "TokenService",
     "ConfigService",
     "SubscriptionPlanService",
+    "channel_request_scheduler",
 ]
