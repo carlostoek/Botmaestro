@@ -1,5 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
+from aiogram import Bot
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -8,7 +9,8 @@ from datetime import datetime
 from utils.user_roles import is_admin, is_vip_member
 from keyboards.admin_vip_kb import get_admin_vip_kb
 from keyboards.vip_kb import get_vip_kb
-from services import TokenService, SubscriptionService, ConfigService
+from services import TokenService, SubscriptionService, ConfigService, SubscriptionPlanService
+from keyboards.tarifas_kb import get_plan_list_kb
 from utils.menu_utils import update_menu
 from database.models import VipSubscription, User
 
@@ -38,6 +40,48 @@ async def create_invite(callback: CallbackQuery, session: AsyncSession):
     await update_menu(
         callback,
         f"Invitación generada: {token.token}",
+        get_admin_vip_kb(),
+        session,
+        "admin_vip",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vip_generate_link")
+async def generate_link_menu(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    plan_service = SubscriptionPlanService(session)
+    plans = await plan_service.list_plans()
+    await update_menu(
+        callback,
+        "Elige un plan para generar enlace",
+        get_plan_list_kb(plans),
+        session,
+        "vip_generate_link",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vip_generate_link_back")
+async def back_from_generate_link(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await vip_menu(callback, session)
+
+
+@router.callback_query(F.data.startswith("plan_link_"))
+async def generate_link(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    plan_id = int(callback.data.split("_")[-1])
+    token_service = TokenService(session)
+    token = await token_service.create_subscription_token(plan_id, callback.from_user.id)
+    bot_username = (await bot.get_me()).username
+    link = f"https://t.me/{bot_username}?start={token.token}"
+    await update_menu(
+        callback,
+        f"Enlace generado: {link}",
         get_admin_vip_kb(),
         session,
         "admin_vip",

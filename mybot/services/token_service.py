@@ -5,7 +5,7 @@ from secrets import token_urlsafe
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models import InviteToken
+from database.models import InviteToken, SubscriptionToken
 
 
 class TokenService:
@@ -31,4 +31,23 @@ class TokenService:
         obj.used_at = datetime.utcnow()
         await self.session.commit()
         return True
+
+    async def create_subscription_token(self, plan_id: int, created_by: int) -> SubscriptionToken:
+        token = token_urlsafe(8)
+        obj = SubscriptionToken(token=token, plan_id=plan_id, created_by=created_by)
+        self.session.add(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
+
+    async def redeem_subscription_token(self, token: str, user_id: int) -> SubscriptionToken | None:
+        stmt = select(SubscriptionToken).where(SubscriptionToken.token == token)
+        result = await self.session.execute(stmt)
+        obj = result.scalar_one_or_none()
+        if not obj or obj.used_by:
+            return None
+        obj.used_by = user_id
+        obj.used_at = datetime.utcnow()
+        await self.session.commit()
+        return obj
 
