@@ -1,4 +1,5 @@
 from aiogram import Router, F, Bot
+from aiogram.exceptions import SkipHandler
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -187,5 +188,6 @@ async def admin_placeholder(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     if callback.data in IGNORED_CALLBACKS:
-        return await callback.answer()
+        await callback.answer()
+        raise SkipHandler()
     await callback.answer("Funcionalidad en desarrollo.", show_alert=True)
