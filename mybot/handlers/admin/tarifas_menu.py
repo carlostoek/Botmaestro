@@ -2,12 +2,12 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.user_roles import is_admin
 from utils.menu_utils import update_menu
 from keyboards.tarifas_kb import get_tarifas_kb, get_duration_kb
+from keyboards.common import get_back_kb
 from services.plan_service import SubscriptionPlanService
 
 router = Router()
@@ -50,12 +50,13 @@ async def plan_name(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
     await state.update_data(name=message.text)
+    await message.delete()
     await message.answer("Introduce el precio:")
     await state.set_state(PlanStates.waiting_price)
 
 
 @router.message(PlanStates.waiting_price)
-async def plan_price(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+async def plan_price(message: Message, state: FSMContext, session: AsyncSession):
     if not is_admin(message.from_user.id):
         return
     data = await state.get_data()
@@ -65,10 +66,10 @@ async def plan_price(message: Message, state: FSMContext, session: AsyncSession,
         await message.answer("Precio inválido. Ingresa un número.")
         return
     service = SubscriptionPlanService(session)
-    plan = await service.create_plan(message.from_user.id, data["name"], price, data["duration_days"])
-    bot_username = (await bot.get_me()).username
-    link = f"https://t.me/{bot_username}?start={plan.token}"
+    await message.delete()
+    await service.create_plan(message.from_user.id, data["name"], price, data["duration_days"])
     await message.answer(
-        f"Tarifa creada:\nNombre: {plan.name}\nPrecio: {plan.price}\nDuración: {plan.duration_days} días\nEnlace: {link}"
+        "✅ Plan creado correctamente.",
+        reply_markup=get_back_kb("config_tarifas"),
     )
     await state.clear()
