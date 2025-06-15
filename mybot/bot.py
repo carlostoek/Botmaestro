@@ -31,7 +31,7 @@ async def main() -> None:
     dp.message.outer_middleware(session_middleware_factory(Session, bot))
     dp.callback_query.outer_middleware(session_middleware_factory(Session, bot))
 
-    dp.include_router(start_token.router)
+    dp.include_router(start_token)
     dp.include_router(start.router)
     dp.include_router(admin_router)
     dp.include_router(vip.router)
