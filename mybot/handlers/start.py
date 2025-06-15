@@ -3,6 +3,8 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.models import User
+
 from keyboards.admin_main_kb import get_admin_main_kb
 from keyboards.subscription_kb import get_subscription_kb
 from utils.user_roles import is_admin, is_vip_member
@@ -15,6 +17,18 @@ router = Router()
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
     user_id = message.from_user.id
+
+    # Ensure the user exists in the database so profile related features work
+    user = await session.get(User, user_id)
+    if not user:
+        user = User(
+            id=user_id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+        )
+        session.add(user)
+        await session.commit()
 
     if is_admin(user_id):
         await message.answer(
