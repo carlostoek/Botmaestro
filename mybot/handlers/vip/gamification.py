@@ -1,5 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
+from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -219,8 +220,8 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
     completed, completed_mission_obj = await mission_service.complete_mission(user_id, mission_id)
 
     if completed:
-        updated_user = await point_service.add_points(user_id, completed_mission_obj.points_reward)
-        leveled_up = await level_service.check_for_level_up(updated_user)
+        progress = await point_service.add_points(user_id, completed_mission_obj.points_reward, bot=bot)
+        leveled_up = await level_service.check_for_level_up(await session.get(User, user_id))
         
         # Opcional: Otorgar un logro por la primera misión
         if not user.missions_completed: # Si es la primera misión del usuario
@@ -273,8 +274,8 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
         return
 
     # Añadir los puntos base
-    updated_user = await point_service.add_points(user_id, base_points_for_reaction)
-    leveled_up = await level_service.check_for_level_up(updated_user) # Verificar si sube de nivel
+    await point_service.add_points(user_id, base_points_for_reaction, bot=callback.bot)
+    leveled_up = await level_service.check_for_level_up(await session.get(User, user_id))
 
     # Marcar el mensaje como reaccionado por el usuario
     if user.channel_reactions is None:
@@ -302,8 +303,8 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
                 completed, mission_obj = await mission_service.complete_mission(user_id, mission.id, target_message_id=target_message_id)
                 if completed:
                     mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**! Ganaste `{mission_obj.points_reward}` puntos adicionales."
-                    updated_user = await point_service.add_points(user_id, mission_obj.points_reward)
-                    leveled_up = await level_service.check_for_level_up(updated_user) or leveled_up # Check level up again after mission points
+                    await point_service.add_points(user_id, mission_obj.points_reward, bot=callback.bot)
+                    leveled_up = await level_service.check_for_level_up(await session.get(User, user_id)) or leveled_up
 
     alert_message = f"¡Reacción registrada! Ganaste `{base_points_for_reaction}` puntos."
     alert_message += mission_completed_message
@@ -358,6 +359,18 @@ async def show_ranking_from_reply_keyboard(message: Message, session: AsyncSessi
     ranking_message = await get_ranking_message(top_users)
     await set_user_menu_state(session, user_id, "ranking")
     await message.answer(ranking_message, reply_markup=get_ranking_keyboard())
+
+
+@router.message(F.text.regexp("/checkin"))
+async def handle_daily_checkin(message: Message, session: AsyncSession, bot: Bot):
+    service = PointService(session)
+    success, progress = await service.daily_checkin(message.from_user.id, bot)
+    if success:
+        await message.answer(
+            BOT_MESSAGES["checkin_success"].format(points=10)
+        )
+    else:
+        await message.answer(BOT_MESSAGES["checkin_already_done"])
 
 # IMPORTANTE: Este handler debe ir AL FINAL de todos los otros F.text handlers,
 # porque si no, podría capturar otros mensajes antes de que sean procesados por handlers más específicos.

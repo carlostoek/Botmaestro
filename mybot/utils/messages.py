@@ -80,5 +80,8 @@ BOT_MESSAGES = {
     "confirm_purchase_message": "¿Estás segur@ de que quieres canjear {reward_name} por {reward_cost} puntos?",
     "purchase_cancelled_message": "Compra cancelada. Puedes seguir explorando otras recompensas.",
     "gain_points_instructions": "Puedes ganar puntos completando misiones y participando en las actividades del canal.",
+    "points_total_notification": "Tienes ahora {total_points} puntos acumulados.",
+    "checkin_success": "✅ Check-in registrado. Ganaste {points} puntos.",
+    "checkin_already_done": "Ya realizaste tu check-in. Vuelve mañana.",
     "unrecognized_command_text": "Comando no reconocido. Aquí está el menú principal:"
 }
