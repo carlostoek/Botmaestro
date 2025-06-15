@@ -5,7 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from keyboards.admin_main_kb import get_admin_main_kb
 from utils.user_roles import is_admin
-from utils.keyboard_utils import get_main_menu_keyboard, get_admin_main_keyboard
+from utils.keyboard_utils import (
+    get_main_menu_keyboard,
+    get_admin_main_keyboard,
+    get_admin_manage_users_keyboard,
+    get_admin_manage_content_keyboard,
+)
+from keyboards.common import get_back_kb
 from utils.messages import BOT_MESSAGES
 from utils.menu_utils import send_menu, update_menu
 from database.models import get_user_menu_state
@@ -59,3 +65,80 @@ async def admin_back(callback: CallbackQuery, session: AsyncSession):
     # Only one level deep currently; go back to main menu
     await update_menu(callback, "Men\u00fa de administraci\u00f3n", get_admin_main_kb(), session, "admin_main")
     await callback.answer()
+
+
+@router.callback_query(F.data == "admin_manage_users")
+async def admin_manage_users(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "Gesti\u00f3n de usuarios",
+        get_admin_manage_users_keyboard(),
+        session,
+        "admin_manage_users",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_manage_content")
+async def admin_manage_content(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "Gestionar Contenido / Juego",
+        get_admin_manage_content_keyboard(),
+        session,
+        "admin_manage_content",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_manage_events_sorteos")
+async def admin_manage_events(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "Gesti\u00f3n de eventos y sorteos en desarrollo.",
+        get_back_kb("admin_main_menu"),
+        session,
+        "admin_manage_events_sorteos",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_bot_config")
+async def admin_bot_config(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "Configuraci\u00f3n del bot en desarrollo.",
+        get_back_kb("admin_main_menu"),
+        session,
+        "admin_bot_config",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_main_menu")
+async def back_to_admin_main(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "Bienvenido al panel de administraci\u00f3n, Diana.",
+        get_admin_main_keyboard(),
+        session,
+        "admin_main",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_"))
+async def admin_placeholder(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.answer("Funcionalidad en desarrollo.", show_alert=True)
