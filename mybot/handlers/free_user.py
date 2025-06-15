@@ -21,3 +21,13 @@ async def subscription_menu(message: Message):
 @router.callback_query(F.data == "free_button")
 async def request_access(callback: CallbackQuery):
     await callback.answer("Acceso solicitado", show_alert=True)
+
+
+@router.callback_query(F.data == "free_game")
+async def free_game(callback: CallbackQuery):
+    """Simple placeholder for the free version of the game."""
+    await callback.message.edit_text(
+        "Versión gratuita del Juego del Diván. ¡Disfruta!",
+        reply_markup=get_subscription_kb(),
+    )
+    await callback.answer()
