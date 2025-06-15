@@ -10,12 +10,14 @@ from utils.messages import BOT_MESSAGES
 from .vip_menu import router as vip_router
 from .free_menu import router as free_router
 from .config_menu import router as config_router
+from .subscriptions import router as sub_router
 from handlers.vip.gamification import router as game_router
 
 router = Router()
 router.include_router(vip_router)
 router.include_router(free_router)
 router.include_router(config_router)
+router.include_router(sub_router)
 router.include_router(game_router)
 
 

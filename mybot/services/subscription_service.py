@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from aiogram import Bot
 
 from database.models import Subscription
 
@@ -58,3 +59,21 @@ class SubscriptionService:
         stmt = select(func.count()).select_from(Subscription).where(Subscription.end_date <= now)
         result = await self.session.execute(stmt)
         return result.scalar_one()
+
+    async def list_expired_subscriptions(self) -> list[Subscription]:
+        now = datetime.utcnow()
+        stmt = select(Subscription).where(Subscription.end_date <= now)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def cleanup_expired(self, bot: Bot, channel_id: int) -> None:
+        expired = await self.list_expired_subscriptions()
+        for sub in expired:
+            try:
+                await bot.ban_chat_member(channel_id, sub.user_id)
+                await bot.unban_chat_member(channel_id, sub.user_id)
+            except Exception:
+                pass
+            await self.session.delete(sub)
+        if expired:
+            await self.session.commit()
