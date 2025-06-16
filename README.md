@@ -36,23 +36,12 @@
 | `DATABASE_URL` | SQLAlchemy database URL. Defaults to `sqlite+aiosqlite:///gamification.db` |
 | `VIP_POINTS_MULTIPLIER` | Points multiplier applied when a VIP user earns points |
 
-3. (Optional) Seed default achievements. This only needs to be done once per
-   database and can be triggered with a small helper script:
+3. Initialise the database and populate base data (tables, achievements,
+   levels and some starter missions). Run this command once after configuring
+   the environment:
 
    ```bash
-   python - <<'EOF'
-   import asyncio
-   from mybot.database.setup import init_db, get_session
-   from mybot.services.achievement_service import AchievementService
-
-   async def main():
-       await init_db()
-       Session = await get_session()
-       async with Session() as s:
-           await AchievementService(s).ensure_achievements_exist()
-
-   asyncio.run(main())
-   EOF
+   python scripts/init_db.py
    ```
 
 4. Run the bot locally:
