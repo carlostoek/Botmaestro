@@ -29,7 +29,11 @@ class BadgeService:
         return True
 
     async def grant_badge(self, user_id: int, badge: Badge) -> bool:
-        existing = await self.session.get(UserBadge, {"user_id": user_id, "badge_id": badge.id})
+        stmt = select(UserBadge).where(
+            UserBadge.user_id == user_id,
+            UserBadge.badge_id == badge.id,
+        )
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing:
             return False
         self.session.add(UserBadge(user_id=user_id, badge_id=badge.id))
@@ -39,7 +43,11 @@ class BadgeService:
     async def check_badges(self, user: User, progress: UserProgress, bot: Bot | None = None):
         badges = await self.list_badges()
         for badge in badges:
-            existing = await self.session.get(UserBadge, {"user_id": user.id, "badge_id": badge.id})
+            stmt = select(UserBadge).where(
+                UserBadge.user_id == user.id,
+                UserBadge.badge_id == badge.id,
+            )
+            existing = (await self.session.execute(stmt)).scalar_one_or_none()
             if existing:
                 continue
             req = badge.requirement.lower()

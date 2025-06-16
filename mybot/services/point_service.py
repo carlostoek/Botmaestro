@@ -34,6 +34,14 @@ class PointService:
         await self.session.commit()
         ach_service = AchievementService(self.session)
         await ach_service.check_message_achievements(user_id, progress.messages_sent, bot=bot)
+        new_badges = await ach_service.check_user_badges(user_id)
+        for badge in new_badges:
+            await ach_service.award_badge(user_id, badge.id)
+            if bot:
+                await bot.send_message(
+                    user_id,
+                    f"🏅 Has obtenido la insignia {badge.icon or ''} {badge.name}!",
+                )
         return progress
 
     async def award_reaction(
@@ -45,10 +53,28 @@ class PointService:
             user.channel_reactions = {}
         user.channel_reactions[str(message_id)] = True
         progress = await self.add_points(user.id, 0.5, bot=bot)
+        ach_service = AchievementService(self.session)
+        new_badges = await ach_service.check_user_badges(user.id)
+        for badge in new_badges:
+            await ach_service.award_badge(user.id, badge.id)
+            if bot:
+                await bot.send_message(
+                    user.id,
+                    f"🏅 Has obtenido la insignia {badge.icon or ''} {badge.name}!",
+                )
         return progress
 
     async def award_poll(self, user_id: int, bot: Bot) -> UserProgress:
         progress = await self.add_points(user_id, 2, bot=bot)
+        ach_service = AchievementService(self.session)
+        new_badges = await ach_service.check_user_badges(user_id)
+        for badge in new_badges:
+            await ach_service.award_badge(user_id, badge.id)
+            if bot:
+                await bot.send_message(
+                    user_id,
+                    f"🏅 Has obtenido la insignia {badge.icon or ''} {badge.name}!",
+                )
         return progress
 
     async def daily_checkin(self, user_id: int, bot: Bot) -> tuple[bool, UserProgress]:
@@ -65,6 +91,14 @@ class PointService:
         await self.session.commit()
         ach_service = AchievementService(self.session)
         await ach_service.check_checkin_achievements(user_id, progress.checkin_streak, bot=bot)
+        new_badges = await ach_service.check_user_badges(user_id)
+        for badge in new_badges:
+            await ach_service.award_badge(user_id, badge.id)
+            if bot:
+                await bot.send_message(
+                    user_id,
+                    f"🏅 Has obtenido la insignia {badge.icon or ''} {badge.name}!",
+                )
         return True, progress
 
     async def add_points(self, user_id: int, points: float, *, bot: Bot | None = None) -> UserProgress:
@@ -94,9 +128,16 @@ class PointService:
         await self.session.refresh(user)
         level_service = LevelService(self.session)
         await level_service.check_for_level_up(user, bot=bot)
-        from services.badge_service import BadgeService
-        badge_service = BadgeService(self.session)
-        await badge_service.check_badges(user, progress, bot=bot)
+
+        ach_service = AchievementService(self.session)
+        new_badges = await ach_service.check_user_badges(user_id)
+        for badge in new_badges:
+            await ach_service.award_badge(user_id, badge.id)
+            if bot:
+                await bot.send_message(
+                    user_id,
+                    f"🏅 Has obtenido la insignia {badge.icon or ''} {badge.name}!",
+                )
         logger.info(
             f"User {user_id} gained {total} points (base {points}, x{multiplier}). Total: {progress.total_points}"
         )

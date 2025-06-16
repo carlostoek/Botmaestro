@@ -148,7 +148,11 @@ class AchievementService:
         badges = (await self.session.execute(stmt)).scalars().all()
         unlockable = []
         for badge in badges:
-            existing = await self.session.get(UserBadge, {"user_id": user_id, "badge_id": badge.id})
+            stmt = select(UserBadge).where(
+                UserBadge.user_id == user_id,
+                UserBadge.badge_id == badge.id,
+            )
+            existing = (await self.session.execute(stmt)).scalar_one_or_none()
             if existing:
                 continue
             if await self._badge_condition_met(user_id, badge):
@@ -159,7 +163,11 @@ class AchievementService:
         badge = await self.session.get(Badge, badge_id)
         if not badge or not badge.is_active:
             return False
-        existing = await self.session.get(UserBadge, {"user_id": user_id, "badge_id": badge_id})
+        stmt = select(UserBadge).where(
+            UserBadge.user_id == user_id,
+            UserBadge.badge_id == badge_id,
+        )
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing:
             return False
         if not await self._badge_condition_met(user_id, badge):
