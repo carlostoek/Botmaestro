@@ -10,6 +10,7 @@ from utils.admin_state import AdminTariffStates
 from keyboards.tarifas_kb import get_duration_kb, get_tarifas_kb
 from keyboards.common import get_back_kb
 from database.models import Tariff
+from utils.text_utils import sanitize_text
 
 router = Router()
 
@@ -77,7 +78,7 @@ async def tariff_name(message: Message, state: FSMContext, session: AsyncSession
         return
     data = await state.get_data()
     tariff = Tariff(
-        name=message.text,
+        name=sanitize_text(message.text),
         duration_days=data["duration_days"],
         price=data["price"],
     )

@@ -9,6 +9,7 @@ from database.models import (
     Challenge,
     UserChallengeProgress,
 )
+from utils.text_utils import sanitize_text
 import logging
 
 logger = logging.getLogger(__name__)
@@ -130,11 +131,11 @@ class MissionService:
         return True, mission
 
     async def create_mission(self, name: str, description: str, points_reward: int, mission_type: str, requires_action: bool = False, action_data: dict = None) -> Mission:
-        mission_id = f"{mission_type}_{name.lower().replace(' ', '_').replace('.', '').replace(',', '')}" # Simple ID generation
+        mission_id = f"{mission_type}_{sanitize_text(name).lower().replace(' ', '_').replace('.', '').replace(',', '')}"
         new_mission = Mission(
             id=mission_id,
-            name=name,
-            description=description,
+            name=sanitize_text(name),
+            description=sanitize_text(description),
             points_reward=points_reward,
             type=mission_type,
             is_active=True,
