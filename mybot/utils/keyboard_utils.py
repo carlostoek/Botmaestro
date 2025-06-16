@@ -123,65 +123,72 @@ def get_admin_manage_content_keyboard():
 
 def get_admin_content_missions_keyboard():
     """Keyboard for mission management options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🆕 Crear misión", callback_data="admin_create_mission")],
-        [InlineKeyboardButton(text="📋 Ver misiones activas", callback_data="admin_view_missions")],
-        [InlineKeyboardButton(text="🗑️ Eliminar misión", callback_data="admin_delete_mission")],
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 def get_admin_content_badges_keyboard():
     """Keyboard for badge management options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🆕 Crear nueva insignia", callback_data="admin_create_badge")],
-        [InlineKeyboardButton(text="📋 Ver todas", callback_data="admin_view_badges")],
-        [InlineKeyboardButton(text="🗑️ Eliminar insignia", callback_data="admin_delete_badge")],
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 def get_admin_content_levels_keyboard():
     """Keyboard for level management options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🧩 Ajustar Niveles", callback_data="admin_adjust_levels")],
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 def get_admin_content_rewards_keyboard():
     """Keyboard for reward catalogue management options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Añadir Recompensa", callback_data="admin_create_reward")],
-        [InlineKeyboardButton(text="✏️ Editar / Eliminar Recompensa", callback_data="admin_edit_reward")],
-        [InlineKeyboardButton(text="📦 Ver Recompensas Canjeadas", callback_data="admin_view_claimed_rewards")],
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 def get_admin_content_auctions_keyboard():
     """Keyboard for auction management options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🛒 Crear Subasta", callback_data="admin_create_auction")],
-        [InlineKeyboardButton(text="📋 Ver Subastas Activas / Finalizadas", callback_data="admin_view_auctions")],
-        [InlineKeyboardButton(text="⛔ Finalizar Subasta Manualmente", callback_data="admin_finish_auction")],
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 def get_admin_content_daily_gifts_keyboard():
     """Keyboard for daily gift configuration options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎯 Configurar Regalo del Día", callback_data="admin_configure_daily_gift")],
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 def get_admin_content_minigames_keyboard():
     """Keyboard placeholder for minigames options."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Bot\u00f3n de prueba", callback_data="admin_game_test")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     return keyboard
 
 # --- Funciones para la navegación de menú ---
