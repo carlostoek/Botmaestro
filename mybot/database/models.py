@@ -204,6 +204,28 @@ class PendingChannelRequest(AsyncAttrs, Base):
     approved = Column(Boolean, default=False)
 
 
+class Challenge(AsyncAttrs, Base):
+    __tablename__ = "challenges"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)  # daily, weekly, monthly
+    goal_type = Column(String, nullable=False)  # messages, reactions, checkins
+    goal_value = Column(Integer, nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+
+
+class UserChallengeProgress(AsyncAttrs, Base):
+    __tablename__ = "user_challenge_progress"
+
+    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    challenge_id = Column(Integer, ForeignKey("challenges.id"), primary_key=True)
+    current_value = Column(Integer, default=0)
+    completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
+
+
 # Funciones para manejar el estado del menú del usuario
 async def get_user_menu_state(session, user_id: int) -> str:
     result = await session.execute(select(User).where(User.id == user_id))

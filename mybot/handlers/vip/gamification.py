@@ -353,10 +353,22 @@ async def show_ranking_from_reply_keyboard(message: Message, session: AsyncSessi
 async def handle_daily_checkin(message: Message, session: AsyncSession, bot: Bot):
     service = PointService(session)
     success, progress = await service.daily_checkin(message.from_user.id, bot)
+    mission_service = MissionService(session)
+    completed_challenges = []
+    if success:
+        completed_challenges = await mission_service.increment_challenge_progress(
+            message.from_user.id,
+            "checkins",
+            bot=bot,
+        )
     if success:
         await message.answer(
             BOT_MESSAGES["checkin_success"].format(points=10)
         )
+        for ch in completed_challenges:
+            await message.answer(
+                f"🎯 ¡Desafío {ch.type} completado! +100 puntos"
+            )
     else:
         await message.answer(BOT_MESSAGES["checkin_already_done"])
 
