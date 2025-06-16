@@ -19,6 +19,8 @@
    export VIP_IDS="33333;44444"           # optional list of VIP user IDs
    export DATABASE_URL="sqlite+aiosqlite:///gamification.db"  # DB connection
    export VIP_POINTS_MULTIPLIER="2"       # points multiplier for VIP members
+   export CHANNEL_SCHEDULER_INTERVAL="30" # seconds between channel checks
+   export VIP_SCHEDULER_INTERVAL="3600"   # seconds between VIP checks
    ```
 
    `DATABASE_URL` defaults to a local SQLite database. When running for the
@@ -35,6 +37,8 @@
 | `VIP_IDS` | Extra user IDs treated as VIP regardless of channel membership |
 | `DATABASE_URL` | SQLAlchemy database URL. Defaults to `sqlite+aiosqlite:///gamification.db` |
 | `VIP_POINTS_MULTIPLIER` | Points multiplier applied when a VIP user earns points |
+| `CHANNEL_SCHEDULER_INTERVAL` | Seconds between checks for channel requests. Defaults to `30` |
+| `VIP_SCHEDULER_INTERVAL` | Seconds between VIP subscription checks. Defaults to `3600` |
 
 3. Initialise the database and populate base data (tables, achievements,
    levels and some starter missions). Run this command once after configuring
@@ -82,6 +86,9 @@ Two background loops run when the bot starts:
    approves them after the wait time stored in the `bot_config` table.
 2. **VIP subscription monitor** – sends expiry reminders 24&nbsp;hours before a
    VIP subscription ends and removes expired users from the VIP channel.
+   The frequency of these checks can be changed at runtime from the admin
+   panel or by setting `CHANNEL_SCHEDULER_INTERVAL` and
+   `VIP_SCHEDULER_INTERVAL` environment variables.
 
 ## Project structure
 

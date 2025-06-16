@@ -64,9 +64,12 @@ async def main() -> None:
     pending_task = asyncio.create_task(channel_request_scheduler(bot, Session))
     vip_task = asyncio.create_task(vip_subscription_scheduler(bot, Session))
 
-    await dp.start_polling(bot)
-    pending_task.cancel()
-    vip_task.cancel()
+    try:
+        await dp.start_polling(bot)
+    finally:
+        pending_task.cancel()
+        vip_task.cancel()
+        await asyncio.gather(pending_task, vip_task, return_exceptions=True)
 
 
 if __name__ == "__main__":
