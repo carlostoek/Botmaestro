@@ -56,9 +56,14 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
     if menu_type == "profile":
         user = await session.get(User, user_id)
         if not user:
-            await callback.message.answer(BOT_MESSAGES["profile_not_registered"])
-            await callback.answer()
-            return
+            user = User(
+                id=user_id,
+                username=callback.from_user.username,
+                first_name=callback.from_user.first_name,
+                last_name=callback.from_user.last_name,
+            )
+            session.add(user)
+            await session.commit()
 
         mission_service = MissionService(session)
         active_missions = await mission_service.get_active_missions(user_id=user_id)
