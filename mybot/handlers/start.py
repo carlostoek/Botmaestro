@@ -11,6 +11,7 @@ from keyboards.subscription_kb import get_subscription_kb
 from utils.user_roles import is_admin, is_vip_member
 from utils.keyboard_utils import get_main_menu_keyboard
 from utils.messages import BOT_MESSAGES
+from utils.menu_utils import send_menu
 
 router = Router()
 
@@ -32,9 +33,13 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
         await session.commit()
 
     if is_admin(user_id):
-        await message.answer(
-            "Bienvenido, administrador!",
-            reply_markup=get_admin_main_kb(),
+        # Show the admin main menu directly when an administrator runs /start
+        await send_menu(
+            message,
+            "Men\u00fa de administraci\u00f3n",
+            get_admin_main_kb(),
+            session,
+            "admin_main",
         )
     elif await is_vip_member(bot, user_id):
         await message.answer(

@@ -27,6 +27,11 @@ class PointsMiddleware(BaseMiddleware):
         try:
             if isinstance(event, Message):
                 if event.from_user and not event.from_user.is_bot:
+                    # Ignore bot commands so /start and similar messages don't
+                    # grant points and trigger notifications
+                    if event.text and event.text.startswith("/"):
+                        return await handler(event, data)
+
                     await service.award_message(event.from_user.id, bot)
                     completed = await mission_service.increment_challenge_progress(
                         event.from_user.id,
