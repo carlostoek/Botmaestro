@@ -99,4 +99,12 @@ BOT_MESSAGES = {
     # Notificaciones de gamificación
     "challenge_completed": "🎯 ¡Desafío {challenge_type} completado! +{points} puntos",
     "reaction_registered": "👍 ¡Reacción registrada!",
+
+    # --- Administración de Recompensas ---
+    "enter_reward_name": "Ingresa el nombre de la recompensa:",
+    "enter_reward_description": "Describe brevemente la recompensa:",
+    "enter_reward_cost": "¿Cuántos puntos costará?",
+    "enter_reward_stock": "¿Cuántas unidades hay disponibles? Escribe -1 para ilimitadas:",
+    "reward_created": "✅ Recompensa creada.",
+    "invalid_number": "Ingresa un número válido.",
 }

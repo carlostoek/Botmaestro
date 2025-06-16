@@ -98,3 +98,12 @@ class AdminRaffleStates(StatesGroup):
     creating_raffle_name = State()
     creating_raffle_description = State()
     creating_raffle_prize = State()
+
+
+class AdminRewardStates(StatesGroup):
+    """States for creating rewards from the admin panel."""
+
+    creating_reward_name = State()
+    creating_reward_description = State()
+    creating_reward_cost = State()
+    creating_reward_stock = State()
