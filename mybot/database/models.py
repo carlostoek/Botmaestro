@@ -90,6 +90,25 @@ class Event(AsyncAttrs, Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class Raffle(AsyncAttrs, Base):
+    __tablename__ = "raffles"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(Text)
+    prize = Column(String, nullable=True)
+    winner_id = Column(BigInteger, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    ended_at = Column(DateTime, nullable=True)
+
+
+class RaffleEntry(AsyncAttrs, Base):
+    __tablename__ = "raffle_entries"
+    raffle_id = Column(Integer, ForeignKey("raffles.id"), primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    created_at = Column(DateTime, default=func.now())
+
+
 class Level(AsyncAttrs, Base):
     __tablename__ = "levels"
 
