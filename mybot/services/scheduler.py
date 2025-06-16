@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy import select
 
 from database.models import PendingChannelRequest, BotConfig, User
-from utils.config import VIP_CHANNEL_ID, CHANNEL_SCHEDULER_INTERVAL, VIP_SCHEDULER_INTERVAL
+from utils.config import CHANNEL_SCHEDULER_INTERVAL, VIP_SCHEDULER_INTERVAL
 from services.config_service import ConfigService
 
 
@@ -89,10 +89,11 @@ async def run_vip_subscription_check(bot: Bot, session_factory: async_sessionmak
         )
         result = await session.execute(stmt)
         expired_users = result.scalars().all()
+        vip_channel_id = await ConfigService(session).get_vip_channel_id()
         for user in expired_users:
             try:
-                if VIP_CHANNEL_ID:
-                    await bot.kick_chat_member(VIP_CHANNEL_ID, user.id)
+                if vip_channel_id:
+                    await bot.kick_chat_member(vip_channel_id, user.id)
             except Exception as e:
                 logging.exception("Failed to remove %s from VIP channel: %s", user.id, e)
             user.role = "free"

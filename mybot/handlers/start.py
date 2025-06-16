@@ -41,7 +41,7 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
             session,
             "admin_main",
         )
-    elif await is_vip_member(bot, user_id):
+    elif await is_vip_member(bot, user_id, session=session):
         await message.answer(
             BOT_MESSAGES["start_welcome_returning_user"],
             reply_markup=get_main_menu_keyboard(),

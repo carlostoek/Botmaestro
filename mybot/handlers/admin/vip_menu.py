@@ -266,8 +266,8 @@ async def set_vip_farewell(message: Message, state: FSMContext, session: AsyncSe
 
 
 @router.callback_query(F.data == "vip_game")
-async def vip_game(callback: CallbackQuery):
-    if not await is_vip_member(callback.bot, callback.from_user.id):
+async def vip_game(callback: CallbackQuery, session: AsyncSession):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
     await callback.message.edit_text(
         "Accede al Juego del Diván", reply_markup=get_vip_kb()

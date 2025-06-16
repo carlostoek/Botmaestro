@@ -10,11 +10,10 @@ from utils.text_utils import sanitize_text
 from services.token_service import TokenService
 from services.subscription_service import SubscriptionService
 from services.achievement_service import AchievementService
-from utils.config import VIP_CHANNEL_ID
+from services.config_service import ConfigService
 
 router = Router()
 
-VIP_CHANNEL_ID_CONST = VIP_CHANNEL_ID
 
 @router.message(CommandStart(deep_link=True))
 async def start_with_token(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
@@ -57,9 +56,10 @@ async def start_with_token(message: Message, command: CommandObject, session: As
     await ach_service.check_vip_achievement(user.id, bot=bot)
 
     invite_link = None
-    if VIP_CHANNEL_ID_CONST:
+    vip_id = await ConfigService(session).get_vip_channel_id()
+    if vip_id:
         try:
-            link = await bot.create_chat_invite_link(VIP_CHANNEL_ID_CONST, member_limit=1)
+            link = await bot.create_chat_invite_link(vip_id, member_limit=1)
             invite_link = link.invite_link
         except Exception:
             invite_link = None
