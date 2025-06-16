@@ -1,7 +1,6 @@
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 from .config import ADMIN_IDS, VIP_IDS, VIP_CHANNEL_ID
-from services.config_service import ConfigService
 import os
 
 DEFAULT_VIP_MULTIPLIER = int(os.environ.get("VIP_POINTS_MULTIPLIER", "2"))
@@ -14,6 +13,7 @@ def is_admin(user_id: int) -> bool:
 
 async def is_vip_member(bot: Bot, user_id: int, session: AsyncSession | None = None) -> bool:
     """Check if the user currently belongs to the VIP channel or list."""
+    from services.config_service import ConfigService
     if user_id in VIP_IDS:
         return True
     vip_channel_id = VIP_CHANNEL_ID
