@@ -15,6 +15,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Placeholder structure for future missions
+MISSION_PLACEHOLDER: list = []
+
 class MissionService:
     def __init__(self, session: AsyncSession):
         self.session = session
