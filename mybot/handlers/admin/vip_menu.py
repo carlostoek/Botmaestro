@@ -16,6 +16,7 @@ from utils.keyboard_utils import get_back_keyboard
 from services import (
     SubscriptionService,
     ConfigService,
+    TokenService,
     get_admin_statistics,
 )
 from database.models import User
@@ -50,14 +51,48 @@ async def vip_generate_token(callback: CallbackQuery, session: AsyncSession):
         return await callback.answer()
     result = await session.execute(select(Tariff))
     tariffs = result.scalars().all()
+    builder = InlineKeyboardBuilder()
+    for t in tariffs:
+        builder.button(text=t.name, callback_data=f"vip_token_{t.id}")
+    builder.button(text="🔙 Volver", callback_data="admin_vip")
+    builder.adjust(1)
     await update_menu(
         callback,
         "Elige la tarifa para generar token:",
-        get_tariff_select_kb(tariffs),
+        builder.as_markup(),
         session,
         "admin_vip",
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vip_token_"))
+async def vip_create_token(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    tariff_id = int(callback.data.split("_")[-1])
+    service = TokenService(session)
+    token = await service.create_vip_token(tariff_id)
+    bot_username = (await bot.get_me()).username
+    link = f"https://t.me/{bot_username}?start={token.token_string}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text="❌ Invalidar", callback_data=f"vip_invalidate_{token.token_string}")
+    builder.button(text="🔙 Volver", callback_data="admin_vip")
+    builder.adjust(1)
+    await callback.message.edit_text(
+        f"Enlace generado: {link}", reply_markup=builder.as_markup()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vip_invalidate_"))
+async def vip_invalidate_token(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    token_string = callback.data.split("_")[-1]
+    service = TokenService(session)
+    await service.invalidate_vip_token(token_string)
+    await callback.answer("Token invalidado", show_alert=True)
 
 
 
@@ -102,6 +137,7 @@ async def manage_subs(callback: CallbackQuery, session: AsyncSession):
     current = subs[start : start + page_size]
 
     lines = []
+    builder = InlineKeyboardBuilder()
     for i, sub in enumerate(current):
         user = await session.get(User, sub.user_id)
         username = sanitize_text(user.username) if user else None
@@ -109,6 +145,9 @@ async def manage_subs(callback: CallbackQuery, session: AsyncSession):
         if username:
             display = username.splitlines()[0]
         lines.append(f"{i+start+1}. {display} (ID: {sub.user_id})")
+        builder.button(text="➕", callback_data=f"vip_extend_{sub.user_id}")
+        builder.button(text="❌", callback_data=f"vip_revoke_{sub.user_id}")
+        builder.row()
 
     text = (
         "Suscriptores VIP activos:\n" + "\n".join(lines)
@@ -116,7 +155,6 @@ async def manage_subs(callback: CallbackQuery, session: AsyncSession):
         else "No hay suscriptores activos."
     )
 
-    builder = InlineKeyboardBuilder()
     if start > 0:
         builder.button(text="⬅️", callback_data=f"vip_manage:{page - 1}")
     if start + page_size < len(subs):
@@ -126,6 +164,26 @@ async def manage_subs(callback: CallbackQuery, session: AsyncSession):
 
     await update_menu(callback, text, builder.as_markup(), session, "admin_vip")
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vip_extend_"))
+async def vip_extend(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    user_id = int(callback.data.split("_")[-1])
+    sub_service = SubscriptionService(session)
+    await sub_service.extend_subscription(user_id, 30)
+    await callback.answer("Suscripción extendida", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("vip_revoke_"))
+async def vip_revoke(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    user_id = int(callback.data.split("_")[-1])
+    sub_service = SubscriptionService(session)
+    await sub_service.revoke_subscription(user_id)
+    await callback.answer("Suscripción revocada", show_alert=True)
 
 
 @router.callback_query(F.data == "vip_config")
