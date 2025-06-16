@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.dispatcher.event.bases import SkipHandler
+from aiogram.exceptions import SkipHandler
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +9,6 @@ from utils.user_roles import is_admin
 from utils.keyboard_utils import (
     get_main_menu_keyboard,
     get_admin_main_keyboard,
-    get_admin_manage_users_keyboard,
     get_admin_manage_content_keyboard,
 )
 from keyboards.common import get_back_kb
@@ -26,7 +25,7 @@ from .free_menu import router as free_router
 from .config_menu import router as config_router
 from .channel_admin import router as channel_admin_router
 from .subscription_plans import router as subscription_plans_router
-from .game_admin import router as game_admin_router
+from .game_admin import router as game_admin_router, show_users_page
 
 router = Router()
 router.include_router(vip_router)
@@ -105,13 +104,7 @@ async def admin_back(callback: CallbackQuery, session: AsyncSession):
 async def admin_manage_users(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
-    await update_menu(
-        callback,
-        "Gesti\u00f3n de usuarios",
-        get_admin_manage_users_keyboard(),
-        session,
-        "admin_manage_users",
-    )
+    await show_users_page(callback.message, session, 0)
     await callback.answer()
 
 
