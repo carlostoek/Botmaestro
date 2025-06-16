@@ -6,6 +6,7 @@ def get_vip_kb():
 
     builder = InlineKeyboardBuilder()
     builder.button(text="🧾 Mi Suscripción", callback_data="vip_subscription")
+    builder.button(text="🗺️ Misiones", callback_data="vip_missions")
     builder.button(text="🎮 Juego del Diván", callback_data="vip_game")
     builder.adjust(1)
     return builder.as_markup()

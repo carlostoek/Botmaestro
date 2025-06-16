@@ -46,6 +46,17 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
+@router.callback_query(F.data == "vip_missions")
+async def vip_missions(callback: CallbackQuery, session: AsyncSession):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Aquí verás las misiones disponibles para ganar puntos extra. Pronto estarán activas.",
+        reply_markup=get_vip_kb(),
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data == "vip_game")
 async def vip_game(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
