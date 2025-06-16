@@ -149,17 +149,9 @@ async def vip_config(callback: CallbackQuery, session: AsyncSession):
 async def vip_config_messages(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
-    config = ConfigService(session)
-    reminder = await config.get_value("vip_reminder_message") or "Tu suscripción VIP expira pronto."
-    farewell = await config.get_value("vip_farewell_message") or "Tu suscripción VIP ha expirado."
-    text = (
-        "Mensajes VIP actuales:\n"
-        f"Recordatorio: {reminder}\n\n"
-        f"Despedida: {farewell}"
-    )
     await update_menu(
         callback,
-        text,
+        "Configura los mensajes del canal VIP",
         get_vip_messages_kb(),
         session,
         "vip_message_config",
@@ -168,11 +160,13 @@ async def vip_config_messages(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "edit_vip_reminder")
-async def prompt_vip_reminder(callback: CallbackQuery, state: FSMContext):
+async def prompt_vip_reminder(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
+    config = ConfigService(session)
+    current = await config.get_value("vip_reminder_message") or "Tu suscripción VIP expira pronto."
     await callback.message.edit_text(
-        "Envía el nuevo mensaje de recordatorio:",
+        f"Mensaje de recordatorio actual:\n{current}\n\nEnvía el nuevo mensaje:",
         reply_markup=get_back_keyboard("vip_config_messages"),
     )
     await state.set_state(AdminVipMessageStates.waiting_for_reminder_message)
@@ -180,18 +174,20 @@ async def prompt_vip_reminder(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "edit_vip_farewell")
-async def prompt_vip_farewell(callback: CallbackQuery, state: FSMContext):
+async def prompt_vip_farewell(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
+    config = ConfigService(session)
+    current = await config.get_value("vip_farewell_message") or "Tu suscripción VIP ha expirado."
     await callback.message.edit_text(
-        "Envía el nuevo mensaje de despedida:",
+        f"Mensaje de despedida actual:\n{current}\n\nEnvía el nuevo mensaje:",
         reply_markup=get_back_keyboard("vip_config_messages"),
     )
     await state.set_state(AdminVipMessageStates.waiting_for_farewell_message)
     await callback.answer()
 
 
-@router.message(AdminVipMessageStates.waiting_for_reminder_message)
+@router.message(AdminVipMessageStates.waiting_for_reminder_message, F.text)
 async def set_vip_reminder(message: Message, state: FSMContext, session: AsyncSession):
     if not is_admin(message.from_user.id):
         return
@@ -201,7 +197,7 @@ async def set_vip_reminder(message: Message, state: FSMContext, session: AsyncSe
     await state.clear()
 
 
-@router.message(AdminVipMessageStates.waiting_for_farewell_message)
+@router.message(AdminVipMessageStates.waiting_for_farewell_message, F.text)
 async def set_vip_farewell(message: Message, state: FSMContext, session: AsyncSession):
     if not is_admin(message.from_user.id):
         return
