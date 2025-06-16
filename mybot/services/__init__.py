@@ -1,4 +1,5 @@
 from .achievement_service import AchievementService
+from .badge_service import BadgeService
 from .level_service import LevelService
 from .mission_service import MissionService
 from .point_service import PointService
@@ -17,6 +18,7 @@ __all__ = [
     "LevelService",
     "MissionService",
     "PointService",
+    "BadgeService",
     "RewardService",
     "SubscriptionService",
     "get_admin_statistics",

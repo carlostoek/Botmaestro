@@ -133,8 +133,9 @@ def get_admin_content_missions_keyboard():
 def get_admin_content_badges_keyboard():
     """Keyboard for badge management options."""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏆 Otorgar Insignia Manualmente", callback_data="admin_give_badge_manual")],
-        [InlineKeyboardButton(text="⚙️ Gestionar Insignias", callback_data="admin_manage_badges")],
+        [InlineKeyboardButton(text="🆕 Crear nueva insignia", callback_data="admin_create_badge")],
+        [InlineKeyboardButton(text="📋 Ver todas", callback_data="admin_view_badges")],
+        [InlineKeyboardButton(text="🗑️ Eliminar insignia", callback_data="admin_delete_badge")],
         [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
     ])
     return keyboard
@@ -294,3 +295,12 @@ def get_admin_users_list_keyboard(
     keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_main_menu")])
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_badge_selection_keyboard(badges: list) -> InlineKeyboardMarkup:
+    rows = []
+    for b in badges:
+        label = f"{b.emoji or ''} {b.name}".strip()
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"select_badge_{b.id}")])
+    rows.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_badges")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
