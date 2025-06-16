@@ -94,9 +94,14 @@ async def receive_free_channel(message: Message, state: FSMContext, session: Asy
     config = ConfigService(session)
     await config.set_vip_channel_id(vip_id)
     await config.set_free_channel_id(chat_id)
+
+    channel_service = ChannelService(session)
+    await channel_service.add_channel(vip_id)
+    await channel_service.add_channel(chat_id)
+
     await message.answer(
         f"Canales registrados correctamente. Canal VIP: {vip_id}, Canal FREE: {chat_id}",
-        reply_markup=get_admin_channels_kb(await ChannelService(session).list_channels()),
+        reply_markup=get_admin_channels_kb(await channel_service.list_channels()),
     )
     await state.clear()
 
