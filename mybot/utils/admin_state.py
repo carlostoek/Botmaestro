@@ -78,10 +78,10 @@ class AdminMissionStates(StatesGroup):
 
     creating_mission_name = State()
     creating_mission_description = State()
-    creating_mission_points = State()
     creating_mission_type = State()
-    creating_mission_requires_action = State()
-    creating_mission_action_data = State()
+    creating_mission_target = State()
+    creating_mission_reward = State()
+    creating_mission_duration = State()
 
 
 class AdminDailyGiftStates(StatesGroup):

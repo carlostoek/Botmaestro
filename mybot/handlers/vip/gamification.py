@@ -420,6 +420,12 @@ async def handle_daily_checkin(message: Message, session: AsyncSession, bot: Bot
             "checkins",
             bot=bot,
         )
+        await mission_service.update_progress(
+            message.from_user.id,
+            "login_streak",
+            current_value=progress.checkin_streak,
+            bot=bot,
+        )
     if success:
         await message.answer(
             BOT_MESSAGES["checkin_success"].format(points=10)
