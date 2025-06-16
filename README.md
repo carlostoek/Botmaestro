@@ -90,6 +90,89 @@ Two background loops run when the bot starts:
    panel or by setting `CHANNEL_SCHEDULER_INTERVAL` and
    `VIP_SCHEDULER_INTERVAL` environment variables.
 
+
+## Estructura Lógica del Menú de Administración
+
+Este proyecto está organizado mediante una interfaz de administración basada en menús jerárquicos, que estructuran las funcionalidades del bot de acuerdo a su propósito. Es fundamental respetar esta arquitectura lógica para garantizar coherencia, claridad y escalabilidad. A continuación, se describe cómo debe entenderse cada sección del menú:
+
+
+---
+
+🛠️ Menú Principal
+
+Este es el panel de control general del bot. Aquí deben colocarse únicamente los accesos a funciones globales o nodos principales. No se deben colocar aquí botones o acciones específicas de gamificación ni de canales. Este menú contiene:
+
+Acceso a la gestión de canales (VIP y free)
+
+Acceso al módulo de juego (gamificación)
+
+Configuraciones generales y de seguridad
+
+Sección de estadísticas del bot
+
+
+
+---
+
+🔐 Opción: Canal VIP 
+
+Este submenú agrupa únicamente las funciones específicas para administrar el canal VIP. Las acciones que deben ir aquí incluyen:
+
+Configuración del canal VIP (ID, invitaciones, acceso)
+
+Planes de suscripción y tarifas
+
+Visualización de usuarios VIP y expiraciones
+
+Acciones administrativas aplicables solo al canal VIP
+
+
+⚠️ No deben colocarse aquí funciones relacionadas con el canal Free ni con la gamificación.
+
+
+---
+
+🎁 Opción: Canal Free
+
+Este submenú está dedicado exclusivamente a la configuración y gestión del canal gratuito. Las funciones típicas incluyen:
+
+Registro del ID del canal Free
+
+Control de accesos gratuitos o limitados
+
+Configuración de contenido gratuito
+
+
+⚠️ Este submenú no debe incluir botones del canal VIP ni funciones del sistema de juego.
+
+
+---
+
+🎮 Opción: Juego Kinky 
+
+Este es el núcleo del sistema de gamificación y debe incluir todas las funciones relacionadas al sistema de juego, independientemente de cuántos canales haya.
+
+Desde aquí se administra:
+
+Reglas de gamificación global (puntos, niveles, logros, misiones)
+
+Visualización y asignación de insignias
+
+Competencias, rankings y lógica de progreso
+
+Configuración de dinámicas del juego
+
+
+🔁 Este módulo es transversal y puede impactar a usuarios de ambos canales (VIP y Free), pero su administración siempre se hace desde aquí.
+
+
+---
+
+🔒 Importante: No mezcles botones de un módulo en otro. El orden y ubicación correcta de los botones garantiza que el bot sea mantenible, escalable y fácil de entender para futuros desarrolladores y para Codex.
+
+
+---
+
 ## Project structure
 
 All active source code lives under the `mybot/` package. An earlier
