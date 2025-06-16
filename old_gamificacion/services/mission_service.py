@@ -4,6 +4,7 @@ import random
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from database.models import Mission, User
+from utils.text_utils import sanitize_text
 import logging
 
 logger = logging.getLogger(__name__)
@@ -123,16 +124,18 @@ class MissionService:
         return True, mission
 
     async def create_mission(self, name: str, description: str, points_reward: int, mission_type: str, requires_action: bool = False, action_data: dict = None) -> Mission:
-        mission_id = f"{mission_type}_{name.lower().replace(' ', '_').replace('.', '').replace(',', '')}" # Simple ID generation
+        mission_id = (
+            f"{mission_type}_{sanitize_text(name).lower().replace(' ', '_').replace('.', '').replace(',', '')}"
+        )  # Simple ID generation
         new_mission = Mission(
             id=mission_id,
-            name=name,
-            description=description,
+            name=sanitize_text(name),
+            description=sanitize_text(description),
             points_reward=points_reward,
             type=mission_type,
             is_active=True,
             requires_action=requires_action,
-            action_data=action_data
+            action_data=action_data,
         )
         self.session.add(new_mission)
         await self.session.commit()
