@@ -24,3 +24,9 @@
    ```bash
    python mybot/bot.py
    ```
+
+## Project structure
+
+All active source code lives under the `mybot/` package. An earlier
+`old_gamificacion` folder containing a legacy prototype has been removed
+to avoid confusion.
