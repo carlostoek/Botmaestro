@@ -131,6 +131,7 @@ class UserProgress(AsyncAttrs, Base):
     total_points = Column(Float, default=0)
     last_activity_at = Column(DateTime, default=func.now())
     last_checkin_at = Column(DateTime, nullable=True)
+    last_daily_gift_at = Column(DateTime, nullable=True)
     last_notified_points = Column(Float, default=0)
     messages_sent = Column(Integer, default=0)
     checkin_streak = Column(Integer, default=0)

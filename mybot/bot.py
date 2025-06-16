@@ -8,6 +8,7 @@ from database.setup import init_db, get_session
 
 from handlers import start, free_user
 from handlers import subscriptions
+from handlers import daily_gift, minigames
 from handlers.channel_access import router as channel_access_router
 from handlers.user import start_token
 from handlers.vip import menu as vip
@@ -54,6 +55,8 @@ async def main() -> None:
     dp.include_router(admin_router)
     dp.include_router(vip.router)
     dp.include_router(gamification.router)
+    dp.include_router(daily_gift.router)
+    dp.include_router(minigames.router)
     dp.include_router(subscriptions.router)
     dp.include_router(free_user.router)
     dp.include_router(channel_access_router)

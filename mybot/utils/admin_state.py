@@ -80,6 +80,12 @@ class AdminMissionStates(StatesGroup):
     creating_mission_action_data = State()
 
 
+class AdminDailyGiftStates(StatesGroup):
+    """States for configuring the daily gift."""
+
+    waiting_for_amount = State()
+
+
 class AdminEventStates(StatesGroup):
     creating_event_name = State()
     creating_event_description = State()
