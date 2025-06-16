@@ -10,6 +10,7 @@ from keyboards.admin_vip_config_kb import (
     get_admin_vip_config_kb,
     get_tariff_select_kb,
     get_vip_messages_kb,
+    get_vip_missions_kb,
 )
 from keyboards.vip_kb import get_vip_kb
 from utils.keyboard_utils import get_back_keyboard
@@ -19,9 +20,10 @@ from services import (
     TokenService,
     get_admin_statistics,
 )
-from database.models import User
+from services.mission_service import MissionService
+from database.models import User, Mission
 from utils.text_utils import sanitize_text
-from utils.admin_state import AdminVipMessageStates
+from utils.admin_state import AdminVipMessageStates, AdminVipMissionStates
 from aiogram.fsm.context import FSMContext
 from database.models import Tariff
 from utils.menu_utils import update_menu
@@ -273,3 +275,156 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
         "Accede al Juego del Diván", reply_markup=get_vip_kb()
     )
     await callback.answer()
+
+
+# --- Gestión de Misiones desde el menú VIP ---
+
+
+@router.callback_query(F.data == "vip_manage_missions")
+async def vip_manage_missions(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await update_menu(
+        callback,
+        "Administrar Misiones VIP",
+        get_vip_missions_kb(),
+        session,
+        "vip_manage_missions",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vip_create_mission")
+async def vip_create_mission(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Nombre de la misión:",
+        reply_markup=get_back_keyboard("vip_manage_missions"),
+    )
+    await state.set_state(AdminVipMissionStates.waiting_for_name)
+    await callback.answer()
+
+
+@router.message(AdminVipMissionStates.waiting_for_name)
+async def vip_mission_name(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(name=message.text)
+    await message.answer("Descripción de la misión:")
+    await state.set_state(AdminVipMissionStates.waiting_for_description)
+
+
+@router.message(AdminVipMissionStates.waiting_for_description)
+async def vip_mission_description(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(description=message.text)
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Diaria", callback_data="vip_mtype_daily")
+    builder.button(text="Semanal", callback_data="vip_mtype_weekly")
+    builder.button(text="Única", callback_data="vip_mtype_one_time")
+    builder.adjust(1)
+    await message.answer("Tipo de misión:", reply_markup=builder.as_markup())
+    await state.set_state(AdminVipMissionStates.waiting_for_type)
+
+
+@router.callback_query(AdminVipMissionStates.waiting_for_type, F.data.startswith("vip_mtype_"))
+async def vip_mission_type(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    mtype = callback.data.split("vip_mtype_")[-1]
+    mapping = {"daily": "daily", "weekly": "weekly", "one_time": "one_time"}
+    await state.update_data(type=mapping.get(mtype, "one_time"))
+    await callback.message.edit_text("Puntos de recompensa:")
+    await state.set_state(AdminVipMissionStates.waiting_for_reward)
+    await callback.answer()
+
+
+@router.message(AdminVipMissionStates.waiting_for_reward)
+async def vip_mission_reward(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        reward = int(message.text)
+    except ValueError:
+        await message.answer("Ingresa un número válido de puntos:")
+        return
+    await state.update_data(reward=reward)
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Sí", callback_data="vip_mactive_yes")
+    builder.button(text="No", callback_data="vip_mactive_no")
+    builder.adjust(2)
+    await message.answer("¿Activar la misión ahora?", reply_markup=builder.as_markup())
+    await state.set_state(AdminVipMissionStates.waiting_for_activation)
+
+
+@router.callback_query(AdminVipMissionStates.waiting_for_activation, F.data.startswith("vip_mactive_"))
+async def vip_mission_activation(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    active = callback.data.endswith("yes")
+    data = await state.get_data()
+    service = MissionService(session)
+    mission = await service.create_mission(
+        data["name"],
+        data["description"],
+        data["type"],
+        1,
+        data["reward"],
+        0,
+    )
+    if not active:
+        await service.toggle_mission_status(mission.id, False)
+    await callback.message.edit_text(
+        "✅ Misión guardada",
+        reply_markup=get_vip_missions_kb(),
+    )
+    await state.clear()
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vip_toggle_mission")
+async def vip_toggle_mission_menu(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    result = await session.execute(select(Mission))
+    missions = result.scalars().all()
+    builder = InlineKeyboardBuilder()
+    for m in missions:
+        status = "✅" if m.is_active else "❌"
+        builder.button(text=f"{status} {m.name}", callback_data=f"vip_toggle_{m.id}")
+    builder.button(text="🔙 Volver", callback_data="vip_manage_missions")
+    builder.adjust(1)
+    await callback.message.edit_text(
+        "Activa o desactiva misiones:", reply_markup=builder.as_markup()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vip_toggle_"))
+async def vip_toggle_mission(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    mission_id = callback.data.split("vip_toggle_")[-1]
+    service = MissionService(session)
+    mission = await service.get_mission_by_id(mission_id)
+    if not mission:
+        await callback.answer("Misión no encontrada", show_alert=True)
+        return
+    await service.toggle_mission_status(mission_id, not mission.is_active)
+    status_word = "activada" if not mission.is_active else "desactivada"
+    await callback.answer(f"Misión {status_word}", show_alert=True)
+    # Refresh list
+    result = await session.execute(select(Mission))
+    missions = result.scalars().all()
+    builder = InlineKeyboardBuilder()
+    for m in missions:
+        status = "✅" if m.is_active else "❌"
+        builder.button(text=f"{status} {m.name}", callback_data=f"vip_toggle_{m.id}")
+    builder.button(text="🔙 Volver", callback_data="vip_manage_missions")
+    builder.adjust(1)
+    await callback.message.edit_text(
+        "Activa o desactiva misiones:", reply_markup=builder.as_markup()
+    )
+

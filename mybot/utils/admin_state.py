@@ -85,6 +85,16 @@ class AdminMissionStates(StatesGroup):
     creating_mission_duration = State()
 
 
+class AdminVipMissionStates(StatesGroup):
+    """Simplified mission creation flow from the VIP config menu."""
+
+    waiting_for_name = State()
+    waiting_for_description = State()
+    waiting_for_type = State()
+    waiting_for_reward = State()
+    waiting_for_activation = State()
+
+
 class AdminBadgeStates(StatesGroup):
     creating_badge_name = State()
     creating_badge_description = State()
