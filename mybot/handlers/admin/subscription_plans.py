@@ -3,14 +3,39 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from utils.user_roles import is_admin
 from utils.admin_state import AdminTariffStates
-from keyboards.tarifas_kb import get_duration_kb
+from keyboards.tarifas_kb import get_duration_kb, get_tarifas_kb
 from keyboards.common import get_back_kb
 from database.models import Tariff
 
 router = Router()
+
+
+@router.callback_query(F.data == "config_tarifas")
+async def config_tarifas(callback: CallbackQuery, session: AsyncSession):
+    """Show existing tariffs and menu options."""
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    result = await session.execute(select(Tariff))
+    tariffs = result.scalars().all()
+    lines = [f"{t.name}: {t.duration_days} d\u00edas - {t.price}" for t in tariffs]
+    text = "Tarifas actuales:\n" + "\n".join(lines) if lines else "No hay tarifas configuradas."
+    await callback.message.edit_text(text, reply_markup=get_tarifas_kb())
+    await callback.answer()
+
+
+@router.callback_query(F.data == "tarifa_new")
+async def start_new_tarifa(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await state.set_state(AdminTariffStates.waiting_for_tariff_duration)
+    await callback.message.edit_text(
+        "Selecciona la duraci\u00f3n:", reply_markup=get_duration_kb()
+    )
+    await callback.answer()
 
 
 @router.message(Command("admin_configure_tariffs"))

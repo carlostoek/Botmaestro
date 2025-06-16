@@ -2,11 +2,12 @@ from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from datetime import datetime
 
 from utils.user_roles import is_admin, is_vip_member
 from keyboards.admin_vip_kb import get_admin_vip_kb
-from keyboards.admin_vip_config_kb import get_admin_vip_config_kb
+from keyboards.admin_vip_config_kb import get_admin_vip_config_kb, get_tariff_select_kb
 from keyboards.vip_kb import get_vip_kb
 from services import (
     TokenService,
@@ -15,6 +16,7 @@ from services import (
     SubscriptionPlanService,
 )
 from keyboards.tarifas_kb import get_plan_list_kb
+from database.models import Tariff
 from utils.menu_utils import update_menu
 
 router = Router()
@@ -44,6 +46,22 @@ async def create_invite(callback: CallbackQuery, session: AsyncSession):
         callback,
         f"Invitación generada: {token.token}",
         get_admin_vip_kb(),
+        session,
+        "admin_vip",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vip_generate_token")
+async def vip_generate_token(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    result = await session.execute(select(Tariff))
+    tariffs = result.scalars().all()
+    await update_menu(
+        callback,
+        "Elige la tarifa para generar token:",
+        get_tariff_select_kb(tariffs),
         session,
         "admin_vip",
     )
