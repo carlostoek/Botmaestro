@@ -94,5 +94,9 @@ BOT_MESSAGES = {
     "dice_points": "Ganaste {points} puntos lanzando el dado.",
     "trivia_correct": "¡Correcto! +5 puntos",
     "trivia_wrong": "Respuesta incorrecta.",
-    "unrecognized_command_text": "Comando no reconocido. Aquí está el menú principal:"
+    "unrecognized_command_text": "Comando no reconocido. Aquí está el menú principal:",
+
+    # Notificaciones de gamificación
+    "challenge_completed": "🎯 ¡Desafío {challenge_type} completado! +{points} puntos",
+    "reaction_registered": "👍 ¡Reacción registrada!",
 }
