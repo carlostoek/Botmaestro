@@ -48,6 +48,8 @@ PREDEFINED_ACHIEVEMENTS = [
 
 # Convenience mapping by ID for easy lookups (used in profile views)
 ACHIEVEMENTS = {a["id"]: a for a in PREDEFINED_ACHIEVEMENTS}
+# Backwards compatibility alias in case external code imports singular name
+ACHIEVEMENT = ACHIEVEMENTS
 
 
 class AchievementService:
