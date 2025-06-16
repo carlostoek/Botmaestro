@@ -30,7 +30,6 @@ from services.mission_service import MissionService
 from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
-from utils.config import VIP_CHANNEL_ID
 
 router = Router()
 
@@ -214,15 +213,20 @@ async def process_channel_post(message: Message, state: FSMContext, session: Asy
     buttons_raw = await config.get_value("reaction_buttons")
     buttons = [b.strip() for b in buttons_raw.split(";") if b.strip()] if buttons_raw else ["👍", "👎"]
 
+    vip_id = await config.get_vip_channel_id()
+    if not vip_id:
+        await message.answer("Canal VIP no configurado.", reply_markup=get_admin_manage_content_keyboard())
+        await state.clear()
+        return
     sent = await bot.send_message(
-        chat_id=VIP_CHANNEL_ID,
+        chat_id=vip_id,
         text=message.text,
         reply_markup=get_custom_reaction_keyboard(0, buttons),
     )
 
     real_id = sent.message_id
     await bot.edit_message_reply_markup(
-        chat_id=VIP_CHANNEL_ID,
+        chat_id=vip_id,
         message_id=real_id,
         reply_markup=get_custom_reaction_keyboard(real_id, buttons),
     )

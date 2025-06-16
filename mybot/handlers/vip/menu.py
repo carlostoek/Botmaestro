@@ -20,7 +20,7 @@ router = Router()
 
 @router.message(Command("vip_menu"))
 async def vip_menu(message: Message, session: AsyncSession):
-    if not await is_vip_member(message.bot, message.from_user.id):
+    if not await is_vip_member(message.bot, message.from_user.id, session=session):
         return
     sub_service = SubscriptionService(session)
     sub = await sub_service.get_subscription(message.from_user.id)
@@ -32,7 +32,7 @@ async def vip_menu(message: Message, session: AsyncSession):
 
 @router.callback_query(F.data == "vip_subscription")
 async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
     sub_service = SubscriptionService(session)
     sub = await sub_service.get_subscription(callback.from_user.id)
@@ -48,7 +48,7 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "vip_game")
 async def vip_game(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
     await callback.message.edit_text(
         BOT_MESSAGES["start_welcome_returning_user"],
@@ -60,7 +60,7 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "game_profile")
 async def game_profile(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
 
     user_id = callback.from_user.id
@@ -96,7 +96,7 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "gain_points")
 async def gain_points(callback: CallbackQuery, session: AsyncSession):
     """Show information on how to earn points in the game."""
-    if not await is_vip_member(callback.bot, callback.from_user.id):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
 
     await callback.message.edit_text(

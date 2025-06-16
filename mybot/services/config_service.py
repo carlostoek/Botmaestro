@@ -7,6 +7,9 @@ from utils.text_utils import sanitize_text
 
 
 class ConfigService:
+    VIP_CHANNEL_KEY = "VIP_CHANNEL_ID"
+    FREE_CHANNEL_KEY = "FREE_CHANNEL_ID"
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
@@ -26,4 +29,24 @@ class ConfigService:
         await self.session.commit()
         await self.session.refresh(entry)
         return entry
+
+    async def get_vip_channel_id(self) -> int | None:
+        value = await self.get_value(self.VIP_CHANNEL_KEY)
+        try:
+            return int(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    async def set_vip_channel_id(self, chat_id: int) -> ConfigEntry:
+        return await self.set_value(self.VIP_CHANNEL_KEY, str(chat_id))
+
+    async def get_free_channel_id(self) -> int | None:
+        value = await self.get_value(self.FREE_CHANNEL_KEY)
+        try:
+            return int(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    async def set_free_channel_id(self, chat_id: int) -> ConfigEntry:
+        return await self.set_value(self.FREE_CHANNEL_KEY, str(chat_id))
 

@@ -62,6 +62,8 @@ class AdminConfigStates(StatesGroup):
     waiting_for_reaction_buttons = State()
     waiting_for_channel_interval = State()
     waiting_for_vip_interval = State()
+    waiting_for_vip_channel_id = State()
+    waiting_for_free_channel_id = State()
 
 
 class AdminVipMessageStates(StatesGroup):

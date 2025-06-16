@@ -68,6 +68,20 @@ async def scheduler_menu(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
+@router.callback_query(F.data == "config_add_channels")
+async def prompt_vip_channel(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Ingresa el ID del canal VIP o reenv\u00eda un mensaje del canal aqu\u00ed.\n"
+        "Puedes escribir directamente el ID del canal (debes ser administrador del canal para obtenerlo), "
+        "o puedes reenviar un mensaje del canal aqu\u00ed y el bot extraer\u00e1 autom\u00e1ticamente el ID del remitente.",
+        reply_markup=get_back_keyboard("admin_config"),
+    )
+    await state.set_state(AdminConfigStates.waiting_for_vip_channel_id)
+    await callback.answer()
+
+
 @router.callback_query(F.data == "set_channel_interval")
 async def prompt_channel_interval(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
@@ -113,6 +127,52 @@ async def set_channel_interval(message: Message, state: FSMContext, session: Asy
         return
     await ConfigService(session).set_value("channel_scheduler_interval", str(seconds))
     await message.answer("Intervalo actualizado.", reply_markup=get_admin_config_kb())
+    await state.clear()
+
+
+@router.message(AdminConfigStates.waiting_for_vip_channel_id)
+async def receive_vip_channel(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    chat_id = None
+    if message.forward_from_chat:
+        chat_id = message.forward_from_chat.id
+    else:
+        try:
+            chat_id = int(message.text.strip())
+        except (TypeError, ValueError):
+            await message.answer("ID inv\u00e1lido. Intenta de nuevo.")
+            return
+    await state.update_data(vip_channel_id=chat_id)
+    await message.answer(
+        "Ahora ingresa el ID del canal FREE o reenv\u00eda un mensaje del canal.",
+        reply_markup=get_back_keyboard("admin_config"),
+    )
+    await state.set_state(AdminConfigStates.waiting_for_free_channel_id)
+
+
+@router.message(AdminConfigStates.waiting_for_free_channel_id)
+async def receive_free_channel(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    chat_id = None
+    if message.forward_from_chat:
+        chat_id = message.forward_from_chat.id
+    else:
+        try:
+            chat_id = int(message.text.strip())
+        except (TypeError, ValueError):
+            await message.answer("ID inv\u00e1lido. Intenta de nuevo.")
+            return
+    data = await state.get_data()
+    vip_id = int(data.get("vip_channel_id"))
+    config = ConfigService(session)
+    await config.set_vip_channel_id(vip_id)
+    await config.set_free_channel_id(chat_id)
+    await message.answer(
+        f"Canales registrados correctamente. Canal VIP: {vip_id}, Canal FREE: {chat_id}",
+        reply_markup=get_admin_config_kb(),
+    )
     await state.clear()
 
 

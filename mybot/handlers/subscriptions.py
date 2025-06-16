@@ -8,13 +8,12 @@ from services.token_service import validate_token
 from services.subscription_service import SubscriptionService
 from database.models import User
 from utils.text_utils import sanitize_text
-from utils.config import VIP_CHANNEL_ID as CONFIG_VIP_CHANNEL_ID
+from services.config_service import ConfigService
 from services.achievement_service import AchievementService
 
 router = Router()
 
 # Placeholder channel ID. Replace with actual value if not provided via config
-VIP_CHANNEL_ID = CONFIG_VIP_CHANNEL_ID
 
 
 def _duration_to_timedelta(duration: int | str) -> timedelta:
@@ -71,9 +70,10 @@ async def activate_vip(message: Message, session: AsyncSession, bot: Bot):
     await ach_service.check_vip_achievement(user.id, bot=bot)
 
     invite_link = None
-    if VIP_CHANNEL_ID:
+    vip_id = await ConfigService(session).get_vip_channel_id()
+    if vip_id:
         try:
-            link = await bot.create_chat_invite_link(VIP_CHANNEL_ID, member_limit=1)
+            link = await bot.create_chat_invite_link(vip_id, member_limit=1)
             invite_link = link.invite_link
         except Exception:
             invite_link = None

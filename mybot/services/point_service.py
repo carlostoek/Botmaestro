@@ -80,7 +80,7 @@ class PointService:
 
         multiplier = 1
         if bot:
-            multiplier = await get_points_multiplier(bot, user_id)
+            multiplier = await get_points_multiplier(bot, user_id, session=self.session)
             event_mult = await EventService(self.session).get_multiplier()
             multiplier *= event_mult
 

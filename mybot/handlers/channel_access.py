@@ -5,17 +5,14 @@ from sqlalchemy import select
 from datetime import datetime
 
 from database.models import PendingChannelRequest, BotConfig
-from utils.config import FREE_CHANNEL_ID as CONFIG_FREE_CHANNEL_ID
+from services.config_service import ConfigService
 
 router = Router()
 
-# Channel ID used to handle join requests for the free channel.
-FREE_CHANNEL_ID = CONFIG_FREE_CHANNEL_ID
-
-
 @router.chat_join_request()
 async def handle_join_request(event: ChatJoinRequest, bot: Bot, session: AsyncSession):
-    if event.chat.id != FREE_CHANNEL_ID:
+    free_id = await ConfigService(session).get_free_channel_id()
+    if event.chat.id != free_id:
         return
     req = PendingChannelRequest(
         user_id=event.from_user.id,
@@ -35,7 +32,8 @@ async def handle_join_request(event: ChatJoinRequest, bot: Bot, session: AsyncSe
 
 @router.chat_member()
 async def handle_chat_member(update: ChatMemberUpdated, bot: Bot, session: AsyncSession):
-    if update.chat.id != FREE_CHANNEL_ID:
+    free_id = await ConfigService(session).get_free_channel_id()
+    if update.chat.id != free_id:
         return
 
     user_id = update.from_user.id
