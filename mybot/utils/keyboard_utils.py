@@ -83,16 +83,6 @@ def get_custom_reaction_keyboard(message_id: int, buttons: list[str]) -> InlineK
         like, dislike = "👍", "👎"
     return get_reaction_keyboard(message_id, like, dislike)
 
-def get_admin_main_keyboard():
-    """Returns the top level keyboard for admin actions."""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🧑‍💼 Gestionar Usuarios", callback_data="admin_manage_users")],
-        [InlineKeyboardButton(text="🎮 Gestionar Contenido/Juego", callback_data="admin_manage_content")],
-        [InlineKeyboardButton(text="🎉 Gestionar Eventos y Sorteos", callback_data="admin_manage_events_sorteos")],
-        [InlineKeyboardButton(text="⚙️ Configuración del Bot", callback_data="admin_bot_config")],
-        [InlineKeyboardButton(text="🔙 Menú Principal", callback_data="menu_principal")]
-    ])
-    return keyboard
 
 def get_admin_manage_users_keyboard():
     """Returns the keyboard for user management options in the admin panel."""
@@ -109,6 +99,7 @@ def get_admin_manage_users_keyboard():
 def get_admin_manage_content_keyboard():
     """Returns the keyboard for content management options."""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="👥 Gestionar Usuarios", callback_data="admin_manage_users")],
         [InlineKeyboardButton(text="📌 Misiones", callback_data="admin_content_missions")],
         [InlineKeyboardButton(text="🏅 Insignias", callback_data="admin_content_badges")],
         [InlineKeyboardButton(text="📈 Niveles", callback_data="admin_content_levels")],
@@ -116,6 +107,7 @@ def get_admin_manage_content_keyboard():
         [InlineKeyboardButton(text="📦 Subastas", callback_data="admin_content_auctions")],
         [InlineKeyboardButton(text="🎁 Regalos Diarios", callback_data="admin_content_daily_gifts")],
         [InlineKeyboardButton(text="🕹 Minijuegos", callback_data="admin_content_minigames")],
+        [InlineKeyboardButton(text="🎉 Eventos y Sorteos", callback_data="admin_manage_events_sorteos")],
         [InlineKeyboardButton(text="📝 Publicar en Canal", callback_data="admin_send_channel_post")],
         [InlineKeyboardButton(text="🔙 Volver al Menú Principal de Administrador", callback_data="admin_main_menu")]
     ])

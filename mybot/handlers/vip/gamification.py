@@ -29,7 +29,6 @@ from utils.keyboard_utils import (
     get_confirm_purchase_keyboard,
     get_ranking_keyboard,
     get_reaction_keyboard,
-    get_admin_main_keyboard,
     get_root_menu,
     get_parent_menu,
     get_child_menu,
