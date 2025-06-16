@@ -1,5 +1,5 @@
 # database/models.py
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey, Float, UniqueConstraint
 from uuid import uuid4
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -149,9 +149,14 @@ class Badge(AsyncAttrs, Base):
 class UserBadge(AsyncAttrs, Base):
     __tablename__ = "user_badges"
 
-    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
-    badge_id = Column(Integer, ForeignKey("badges.id"), primary_key=True)
-    earned_at = Column(DateTime, default=func.now())
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
+    badge_id = Column(Integer, ForeignKey("badges.id"), nullable=False)
+    awarded_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "badge_id", name="uix_user_badges"),
+    )
 
 
 class Level(AsyncAttrs, Base):
