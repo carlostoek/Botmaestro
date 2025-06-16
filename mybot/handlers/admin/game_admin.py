@@ -27,13 +27,17 @@ from utils.admin_state import (
     AdminMissionStates,
     AdminBadgeStates,
     AdminDailyGiftStates,
+    AdminRewardStates,
 )
 from services.mission_service import MissionService
+from services.reward_service import RewardService
 from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
 from services.badge_service import BadgeService
 from services.message_service import MessageService
+from utils.config import VIP_CHANNEL_ID
+from utils.messages import BOT_MESSAGES
 
 router = Router()
 
@@ -760,4 +764,114 @@ async def save_daily_gift_amount(message: Message, state: FSMContext, session: A
         "Regalo diario actualizado.", reply_markup=keyboard
     )
     await state.clear()
+
+
+# --- Gestión de Recompensas ---
+
+@router.callback_query(F.data == "admin_create_reward")
+async def admin_create_reward(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        BOT_MESSAGES["enter_reward_name"],
+        reply_markup=get_back_keyboard("admin_content_rewards"),
+    )
+    await state.set_state(AdminRewardStates.creating_reward_name)
+    await callback.answer()
+
+
+@router.message(AdminRewardStates.creating_reward_name)
+async def process_reward_name(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(name=message.text)
+    await message.answer(BOT_MESSAGES["enter_reward_description"])
+    await state.set_state(AdminRewardStates.creating_reward_description)
+
+
+@router.message(AdminRewardStates.creating_reward_description)
+async def process_reward_description(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(description=message.text)
+    await message.answer(BOT_MESSAGES["enter_reward_cost"])
+    await state.set_state(AdminRewardStates.creating_reward_cost)
+
+
+@router.message(AdminRewardStates.creating_reward_cost)
+async def process_reward_cost(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        cost = int(message.text)
+    except ValueError:
+        await message.answer(BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(cost=cost)
+    await message.answer(BOT_MESSAGES["enter_reward_stock"])
+    await state.set_state(AdminRewardStates.creating_reward_stock)
+
+
+@router.message(AdminRewardStates.creating_reward_stock)
+async def process_reward_stock(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        stock = int(message.text)
+    except ValueError:
+        await message.answer(BOT_MESSAGES["invalid_number"])
+        return
+    data = await state.get_data()
+    service = RewardService(session)
+    await service.create_reward(data["name"], data["description"], data["cost"], stock)
+    await message.answer(
+        BOT_MESSAGES["reward_created"], reply_markup=get_admin_content_rewards_keyboard()
+    )
+    await state.clear()
+
+
+@router.callback_query(F.data == "admin_edit_reward")
+async def admin_edit_reward(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    rewards = await RewardService(session).list_rewards()
+    keyboard = []
+    for r in rewards:
+        status = "✅" if r.is_active else "❌"
+        keyboard.append([
+            InlineKeyboardButton(text=f"{status} {r.name}", callback_data=f"toggle_reward_{r.id}")
+        ])
+    keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_rewards")])
+    await callback.message.edit_text(
+        "Activar o desactivar recompensas:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("toggle_reward_"))
+async def toggle_reward(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    reward_id = int(callback.data.split("toggle_reward_")[-1])
+    service = RewardService(session)
+    reward = await service.get_reward_by_id(reward_id)
+    if not reward:
+        await callback.answer("Recompensa no encontrada", show_alert=True)
+        return
+    await service.toggle_reward_status(reward_id, not reward.is_active)
+    # Refresh list
+    rewards = await service.list_rewards()
+    keyboard = []
+    for r in rewards:
+        status = "✅" if r.is_active else "❌"
+        keyboard.append([
+            InlineKeyboardButton(text=f"{status} {r.name}", callback_data=f"toggle_reward_{r.id}")
+        ])
+    keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_rewards")])
+    await callback.message.edit_text(
+        "Activar o desactivar recompensas:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+    )
+    await callback.answer()
 

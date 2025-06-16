@@ -18,6 +18,11 @@ class RewardService:
     async def get_reward_by_id(self, reward_id: int) -> Reward | None:
         return await self.session.get(Reward, reward_id)
 
+    async def list_rewards(self) -> list[Reward]:
+        """Return all rewards regardless of status."""
+        result = await self.session.execute(select(Reward))
+        return result.scalars().all()
+
     async def purchase_reward(self, user_id: int, reward_id: int) -> tuple[bool, str]:
         user = await self.session.get(User, user_id)
         reward = await self.session.get(Reward, reward_id)
