@@ -90,6 +90,19 @@ class UserMission(AsyncAttrs, Base):
     completed = Column(Boolean, default=False)
     completed_at = Column(DateTime, nullable=True)
 
+
+class UserMissionProgress(AsyncAttrs, Base):
+    """Tracks progress of a mission per user."""
+
+    __tablename__ = "user_mission_progress"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.id"))
+    mission_id = Column(String, ForeignKey("missions.id"))
+    progress_value = Column(Integer, default=0)
+    completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
+
 class Event(AsyncAttrs, Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True, autoincrement=True)

@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 from database.models import (
     Mission,
     User,
-    UserMission,
+    UserMissionProgress,
     Challenge,
     UserChallengeProgress,
 )
@@ -182,22 +182,23 @@ class MissionService:
     ) -> None:
         missions = await self.get_active_missions(mission_type=mission_type)
         for mission in missions:
-            stmt = select(UserMission).where(
-                UserMission.user_id == user_id, UserMission.mission_id == mission.id
+            stmt = select(UserMissionProgress).where(
+                UserMissionProgress.user_id == user_id,
+                UserMissionProgress.mission_id == mission.id,
             )
             result = await self.session.execute(stmt)
             record = result.scalar_one_or_none()
             if not record:
-                record = UserMission(user_id=user_id, mission_id=mission.id)
+                record = UserMissionProgress(user_id=user_id, mission_id=mission.id)
                 self.session.add(record)
             if record.completed:
                 continue
             if mission_type == "login_streak" and current_value is not None:
                 progress = current_value
-                record.progress = progress
+                record.progress_value = progress
             else:
-                record.progress += increment
-                progress = record.progress
+                record.progress_value += increment
+                progress = record.progress_value
             if progress >= mission.target_value:
                 record.completed = True
                 record.completed_at = datetime.datetime.utcnow()
