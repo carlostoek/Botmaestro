@@ -8,7 +8,6 @@ from keyboards.admin_main_kb import get_admin_main_kb
 from utils.user_roles import is_admin
 from utils.keyboard_utils import (
     get_main_menu_keyboard,
-    get_admin_main_keyboard,
     get_admin_manage_content_keyboard,
 )
 from keyboards.common import get_back_kb
@@ -26,7 +25,7 @@ from .free_menu import router as free_router
 from .config_menu import router as config_router
 from .channel_admin import router as channel_admin_router
 from .subscription_plans import router as subscription_plans_router
-from .game_admin import router as game_admin_router, show_users_page
+from .game_admin import router as game_admin_router
 from .event_admin import router as event_admin_router
 
 router = Router()
@@ -139,13 +138,6 @@ async def admin_back(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
-@router.callback_query(F.data == "admin_manage_users")
-async def admin_manage_users(callback: CallbackQuery, session: AsyncSession):
-    if not is_admin(callback.from_user.id):
-        return await callback.answer()
-    await show_users_page(callback.message, session, 0)
-    await callback.answer()
-
 
 @router.callback_query(F.data == "admin_manage_content")
 async def admin_manage_content(callback: CallbackQuery, session: AsyncSession):
@@ -184,7 +176,7 @@ async def back_to_admin_main(callback: CallbackQuery, session: AsyncSession):
     await update_menu(
         callback,
         "Bienvenido al panel de administraci\u00f3n, Diana.",
-        get_admin_main_keyboard(),
+        get_admin_main_kb(),
         session,
         "admin_main",
     )
