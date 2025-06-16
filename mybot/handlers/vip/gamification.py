@@ -1,5 +1,10 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -198,6 +203,26 @@ async def handle_mission_details_callback(callback: CallbackQuery, session: Asyn
     await callback.answer()
 
 
+# Handler para paginación de misiones
+@router.callback_query(F.data.startswith("missions_page_"))
+async def handle_missions_pagination(callback: CallbackQuery, session: AsyncSession):
+    user_id = callback.from_user.id
+    try:
+        offset = int(callback.data.split("_")[-1])
+    except ValueError:
+        offset = 0
+
+    mission_service = MissionService(session)
+    active_missions = await mission_service.get_active_missions(user_id=user_id)
+
+    await callback.message.edit_text(
+        BOT_MESSAGES["menu_missions_text"],
+        reply_markup=get_missions_keyboard(active_missions, offset=offset),
+    )
+    await set_user_menu_state(session, user_id, "missions")
+    await callback.answer()
+
+
 # Handler para completar una misión
 @router.callback_query(F.data.startswith("complete_mission_"))
 async def handle_complete_mission_callback(callback: CallbackQuery, session: AsyncSession):
@@ -225,7 +250,7 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
     completed, completed_mission_obj = await mission_service.complete_mission(user_id, mission_id)
 
     if completed:
-        progress = await point_service.add_points(user_id, completed_mission_obj.points_reward, bot=bot)
+        await point_service.add_points(user_id, completed_mission_obj.points_reward, bot=callback.bot)
         
         # Opcional: Otorgar un logro por la primera misión
         if not user.missions_completed: # Si es la primera misión del usuario
