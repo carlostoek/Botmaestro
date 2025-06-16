@@ -16,11 +16,15 @@ from utils.keyboard_utils import get_back_keyboard
 from services import (
     SubscriptionService,
     ConfigService,
+    get_admin_statistics,
 )
+from database.models import User
+from utils.text_utils import sanitize_text
 from utils.admin_state import AdminVipMessageStates
 from aiogram.fsm.context import FSMContext
 from database.models import Tariff
 from utils.menu_utils import update_menu
+from database.models import set_user_menu_state
 
 router = Router()
 
@@ -61,10 +65,27 @@ async def vip_generate_token(callback: CallbackQuery, session: AsyncSession):
 async def vip_stats(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
-    sub_service = SubscriptionService(session)
-    total, active, expired = await sub_service.get_statistics()
-    text = f"Suscripciones totales: {total}\nActivas: {active}\nExpiradas: {expired}"
-    await update_menu(callback, text, get_admin_vip_kb(), session, "admin_vip")
+    stats = await get_admin_statistics(session)
+    text_lines = [
+        "*Estad\xc3\xadsticas del sistema*",
+        f"\n*Usuarios totales:* {stats['users_total']}",
+        f"*Suscripciones totales:* {stats['subscriptions_total']}",
+        f"*Activas:* {stats['subscriptions_active']}",
+        f"*Expiradas:* {stats['subscriptions_expired']}",
+    ]
+    revenue = stats.get("revenue_total")
+    if revenue:
+        text_lines.append(f"*Recaudaci\xc3\xb3n:* {revenue}")
+    else:
+        text_lines.append("*Recaudaci\xc3\xb3n:* No disponible")
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="\ud83d\udd19 Volver al men\xc3\xba", callback_data="admin_vip")
+    builder.adjust(1)
+    await callback.message.edit_text(
+        "\n".join(text_lines), reply_markup=builder.as_markup(), parse_mode="Markdown"
+    )
+    await set_user_menu_state(session, callback.from_user.id, "admin_vip")
     await callback.answer()
 
 
@@ -80,7 +101,15 @@ async def manage_subs(callback: CallbackQuery, session: AsyncSession):
     start = page * page_size
     current = subs[start : start + page_size]
 
-    lines = [f"{i+start+1}. {sub.user_id}" for i, sub in enumerate(current)]
+    lines = []
+    for i, sub in enumerate(current):
+        user = await session.get(User, sub.user_id)
+        username = sanitize_text(user.username) if user else None
+        display = "No disponible"
+        if username:
+            display = username.splitlines()[0]
+        lines.append(f"{i+start+1}. {display} (ID: {sub.user_id})")
+
     text = (
         "Suscriptores VIP activos:\n" + "\n".join(lines)
         if lines
