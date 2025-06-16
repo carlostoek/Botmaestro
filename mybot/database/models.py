@@ -67,7 +67,6 @@ class UserAchievement(AsyncAttrs, Base):
 
 class Mission(AsyncAttrs, Base):
     __tablename__ = "missions"
-
     id = Column(String, primary_key=True, unique=True)
     name = Column(String, nullable=False)
     description = Column(Text)
