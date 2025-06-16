@@ -1,7 +1,7 @@
 # database/setup.py
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool # NullPool es adecuado para Railway, para SQLite local puedes mantenerlo o quitarlo
-from database.models import Base
+from .models import Base
 from utils.config import Config
 
 # Hacemos que el motor sea una variable global o pasada, no creada repetidamente
