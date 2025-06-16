@@ -13,13 +13,18 @@ from handlers.user import start_token
 from handlers.vip import menu as vip
 from handlers.vip import gamification
 from handlers.admin import admin_router
-from utils.config import BOT_TOKEN
+from utils.config import BOT_TOKEN, VIP_IDS, VIP_CHANNEL_ID
+import logging
 from services import channel_request_scheduler, vip_subscription_scheduler
 
 
 async def main() -> None:
     await init_db()
     Session = await get_session()
+
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f"Loaded VIP IDs: {VIP_IDS}")
+    logging.info(f"VIP channel ID: {VIP_CHANNEL_ID}")
 
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=MemoryStorage())
