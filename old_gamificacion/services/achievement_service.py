@@ -11,6 +11,8 @@ ACHIEVEMENTS = {
     "trivia_master": {"name": "Experto en Trivias", "icon": "🧠"}, # Requires trivia system
     "contributor": {"name": "Colaborador Activo", "icon": "🤝"} # Requires more complex engagement
 }
+# Backwards compatibility alias for singular constant name
+ACHIEVEMENT = ACHIEVEMENTS
 
 class AchievementService:
     def __init__(self, session: AsyncSession):
