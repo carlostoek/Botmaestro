@@ -109,6 +109,25 @@ class RaffleEntry(AsyncAttrs, Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class Badge(AsyncAttrs, Base):
+    __tablename__ = "badges"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    requirement = Column(String, nullable=False)
+    emoji = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+
+class UserBadge(AsyncAttrs, Base):
+    __tablename__ = "user_badges"
+
+    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    badge_id = Column(Integer, ForeignKey("badges.id"), primary_key=True)
+    earned_at = Column(DateTime, default=func.now())
+
+
 class Level(AsyncAttrs, Base):
     __tablename__ = "levels"
 

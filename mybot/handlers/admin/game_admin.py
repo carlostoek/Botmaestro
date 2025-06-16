@@ -19,17 +19,20 @@ from utils.keyboard_utils import (
     get_admin_content_auctions_keyboard,
     get_admin_content_daily_gifts_keyboard,
     get_admin_content_minigames_keyboard,
+    get_badge_selection_keyboard,
 )
 from utils.admin_state import (
     AdminUserStates,
     AdminContentStates,
     AdminMissionStates,
+    AdminBadgeStates,
     AdminDailyGiftStates,
 )
 from services.mission_service import MissionService
 from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
+from services.badge_service import BadgeService
 from utils.config import VIP_CHANNEL_ID
 
 router = Router()
@@ -443,6 +446,135 @@ async def admin_content_badges(callback: CallbackQuery, session: AsyncSession):
         session,
         "admin_content_badges",
     )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_create_badge")
+async def admin_create_badge(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "📛 Nombre de la insignia:",
+        reply_markup=get_back_keyboard("admin_content_badges"),
+    )
+    await state.set_state(AdminBadgeStates.creating_badge_name)
+    await callback.answer()
+
+
+@router.message(AdminBadgeStates.creating_badge_name)
+async def badge_name_step(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(name=message.text.strip())
+    await message.answer("📝 Descripción (corta):")
+    await state.set_state(AdminBadgeStates.creating_badge_description)
+
+
+@router.message(AdminBadgeStates.creating_badge_description)
+async def badge_description_step(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(description=message.text.strip())
+    await message.answer("🎯 Requisito (ej. 'Alcanzar nivel 5'):")
+    await state.set_state(AdminBadgeStates.creating_badge_requirement)
+
+
+@router.message(AdminBadgeStates.creating_badge_requirement)
+async def badge_requirement_step(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(requirement=message.text.strip())
+    await message.answer("🖼️ Emoji o símbolo (opcional, escribe 'no' para omitir):")
+    await state.set_state(AdminBadgeStates.creating_badge_emoji)
+
+
+@router.message(AdminBadgeStates.creating_badge_emoji)
+async def badge_emoji_step(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    emoji = message.text.strip()
+    if emoji.lower() in {"no", "none", "-"}:
+        emoji = None
+    data = await state.get_data()
+    service = BadgeService(session)
+    await service.create_badge(
+        data.get("name", ""),
+        data.get("description", ""),
+        data.get("requirement", ""),
+        emoji,
+    )
+    await message.answer(
+        "Insignia creada correctamente", reply_markup=get_admin_content_badges_keyboard()
+    )
+    await state.clear()
+
+
+@router.callback_query(F.data == "admin_view_badges")
+async def admin_view_badges(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    service = BadgeService(session)
+    badges = await service.list_badges()
+    if badges:
+        lines = [f"{b.id}. {b.emoji or ''} {b.name} | {b.requirement}" for b in badges]
+        text = "\n".join(lines)
+    else:
+        text = "No hay insignias definidas."
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard("admin_content_badges"))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_delete_badge")
+async def admin_delete_badge(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    service = BadgeService(session)
+    badges = await service.list_badges()
+    if not badges:
+        await callback.answer("No hay insignias para eliminar", show_alert=True)
+        return
+    await callback.message.edit_text(
+        "Selecciona la insignia a eliminar:",
+        reply_markup=get_badge_selection_keyboard(badges),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("select_badge_"))
+async def select_badge(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    badge_id = int(callback.data.split("select_badge_")[-1])
+    badge = await session.get(Badge, badge_id)
+    if not badge:
+        await callback.answer("Insignia no encontrada", show_alert=True)
+        return
+    await state.update_data(delete_badge_id=badge_id)
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Sí", callback_data="confirm_delete_badge")],
+            [InlineKeyboardButton(text="❌ No", callback_data="admin_content_badges")],
+        ]
+    )
+    await callback.message.edit_text(
+        f"¿Eliminar '{badge.name}'?", reply_markup=keyboard
+    )
+    await state.set_state(AdminBadgeStates.deleting_badge)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "confirm_delete_badge")
+async def confirm_delete_badge(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    data = await state.get_data()
+    badge_id = data.get("delete_badge_id")
+    service = BadgeService(session)
+    await service.delete_badge(badge_id)
+    await callback.message.edit_text(
+        "Insignia eliminada", reply_markup=get_admin_content_badges_keyboard()
+    )
+    await state.clear()
     await callback.answer()
 
 

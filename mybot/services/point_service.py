@@ -94,6 +94,9 @@ class PointService:
         await self.session.refresh(user)
         level_service = LevelService(self.session)
         await level_service.check_for_level_up(user, bot=bot)
+        from services.badge_service import BadgeService
+        badge_service = BadgeService(self.session)
+        await badge_service.check_badges(user, progress, bot=bot)
         logger.info(
             f"User {user_id} gained {total} points (base {points}, x{multiplier}). Total: {progress.total_points}"
         )
