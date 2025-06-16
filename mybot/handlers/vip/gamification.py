@@ -10,6 +10,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database.models import User, Mission, Reward, get_user_menu_state, set_user_menu_state
+from utils.text_utils import sanitize_text
 from services.point_service import PointService
 from services.achievement_service import AchievementService, ACHIEVEMENTS
 from services.mission_service import MissionService
@@ -63,9 +64,9 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
         if not user:
             user = User(
                 id=user_id,
-                username=callback.from_user.username,
-                first_name=callback.from_user.first_name,
-                last_name=callback.from_user.last_name,
+                username=sanitize_text(callback.from_user.username),
+                first_name=sanitize_text(callback.from_user.first_name),
+                last_name=sanitize_text(callback.from_user.last_name),
             )
             session.add(user)
             await session.commit()

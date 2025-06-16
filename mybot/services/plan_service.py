@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models import SubscriptionPlan
+from utils.text_utils import sanitize_text
 
 
 class SubscriptionPlanService:
@@ -13,7 +14,7 @@ class SubscriptionPlanService:
 
     async def create_plan(self, created_by: int, name: str, price: int, duration_days: int) -> SubscriptionPlan:
         plan = SubscriptionPlan(
-            name=name,
+            name=sanitize_text(name),
             price=price,
             duration_days=duration_days,
             created_by=created_by,
