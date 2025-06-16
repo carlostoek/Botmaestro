@@ -15,6 +15,7 @@
    export BOT_TOKEN="<your_bot_token>"
    export ADMIN_IDS="11111;22222"       # user IDs with admin privileges
    export VIP_CHANNEL_ID="-100123456789"  # ID of the VIP Telegram channel
+   export FREE_CHANNEL_ID="-100987654321" # ID of the free Telegram channel
    export VIP_IDS="33333;44444"        # optional list of VIP user IDs
    ```
 

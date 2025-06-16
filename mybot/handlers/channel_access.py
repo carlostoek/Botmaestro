@@ -5,10 +5,12 @@ from sqlalchemy import select
 from datetime import datetime
 
 from database.models import PendingChannelRequest, BotConfig
+from utils.config import FREE_CHANNEL_ID as CONFIG_FREE_CHANNEL_ID
 
 router = Router()
 
-FREE_CHANNEL_ID = -100123456789  # TODO: replace with real channel id
+# Channel ID used to handle join requests for the free channel.
+FREE_CHANNEL_ID = CONFIG_FREE_CHANNEL_ID
 
 
 @router.chat_join_request()
