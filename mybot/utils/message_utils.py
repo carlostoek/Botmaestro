@@ -116,3 +116,11 @@ async def get_ranking_message(users_ranking: list[User]) -> str:
 
     return ranking_text
 
+
+async def get_mission_completed_message(mission: Mission) -> str:
+    """Return a formatted message for mission completion."""
+    return BOT_MESSAGES["mission_completed_feedback"].format(
+        mission_name=mission.name,
+        points_reward=mission.reward_points,
+    )
+

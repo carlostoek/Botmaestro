@@ -85,7 +85,15 @@ class MissionService:
         
         return False, "" # Not completed for current period or not a one-time mission
 
-    async def complete_mission(self, user_id: int, mission_id: str, reaction_type: str = None, target_message_id: int = None) -> tuple[bool, Mission | None]:
+    async def complete_mission(
+        self,
+        user_id: int,
+        mission_id: str,
+        reaction_type: str = None,
+        target_message_id: int = None,
+        *,
+        bot=None,
+    ) -> tuple[bool, Mission | None]:
         """
         Marks a mission as completed for a user, adds points, and handles reset logic.
         Returns (True, mission_object) on success, (False, None) on failure.
@@ -122,7 +130,7 @@ class MissionService:
              from services.point_service import PointService
              point_service = PointService(self.session)
 
-        await point_service.add_points(user_id, mission.reward_points)
+        await point_service.add_points(user_id, mission.reward_points, bot=bot)
 
         # Update last reset timestamps for daily/weekly missions
         if mission.type == "daily":
@@ -135,7 +143,21 @@ class MissionService:
 
         await self.session.commit()
         await self.session.refresh(user)
-        logger.info(f"User {user_id} successfully completed mission {mission_id} (Type: {mission.type}, Message: {target_message_id}).")
+
+        if bot:
+            from utils.message_utils import get_mission_completed_message
+            from utils.keyboard_utils import get_mission_completed_keyboard
+
+            text = await get_mission_completed_message(mission)
+            await bot.send_message(
+                user_id,
+                text,
+                reply_markup=get_mission_completed_keyboard(),
+            )
+
+        logger.info(
+            f"User {user_id} successfully completed mission {mission_id} (Type: {mission.type}, Message: {target_message_id})."
+        )
         return True, mission
 
     async def create_mission(
@@ -204,9 +226,14 @@ class MissionService:
                 record.completed_at = datetime.datetime.utcnow()
                 await self.point_service.add_points(user_id, mission.reward_points, bot=bot)
                 if bot:
+                    from utils.message_utils import get_mission_completed_message
+                    from utils.keyboard_utils import get_mission_completed_keyboard
+
+                    text = await get_mission_completed_message(mission)
                     await bot.send_message(
                         user_id,
-                        f"🎉 ¡Has completado la misión {mission.name}! +{mission.reward_points} puntos",
+                        text,
+                        reply_markup=get_mission_completed_keyboard(),
                     )
         await self.session.commit()
 

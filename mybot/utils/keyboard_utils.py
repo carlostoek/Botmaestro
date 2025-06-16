@@ -1,6 +1,7 @@
 # utils/keyboard_utils.py
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from database.models import User
+from utils.messages import BOT_MESSAGES
 
 
 def get_main_menu_keyboard():
@@ -251,6 +252,19 @@ def get_back_keyboard(callback_data: str) -> InlineKeyboardMarkup:
     """Return a simple keyboard with a single back button."""
     keyboard = [
         [InlineKeyboardButton(text="🔙 Volver", callback_data=callback_data)]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_mission_completed_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard shown after completing a mission."""
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text=BOT_MESSAGES["view_all_missions_button_text"],
+                callback_data="menu:missions",
+            )
+        ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
