@@ -78,3 +78,15 @@ class AdminMissionStates(StatesGroup):
     creating_mission_type = State()
     creating_mission_requires_action = State()
     creating_mission_action_data = State()
+
+
+class AdminEventStates(StatesGroup):
+    creating_event_name = State()
+    creating_event_description = State()
+    creating_event_multiplier = State()
+
+
+class AdminRaffleStates(StatesGroup):
+    creating_raffle_name = State()
+    creating_raffle_description = State()
+    creating_raffle_prize = State()

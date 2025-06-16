@@ -8,6 +8,8 @@ from .token_service import TokenService, validate_token
 from .config_service import ConfigService
 from .plan_service import SubscriptionPlanService
 from .channel_service import ChannelService
+from .event_service import EventService
+from .raffle_service import RaffleService
 from .scheduler import channel_request_scheduler, vip_subscription_scheduler
 
 __all__ = [
@@ -25,4 +27,6 @@ __all__ = [
     "ChannelService",
     "channel_request_scheduler",
     "vip_subscription_scheduler",
+    "EventService",
+    "RaffleService",
 ]

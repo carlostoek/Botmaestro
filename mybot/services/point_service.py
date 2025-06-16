@@ -5,6 +5,7 @@ from utils.user_roles import get_points_multiplier
 from aiogram import Bot
 from services.level_service import LevelService
 from services.achievement_service import AchievementService
+from services.event_service import EventService
 import datetime
 import logging
 
@@ -80,6 +81,8 @@ class PointService:
         multiplier = 1
         if bot:
             multiplier = await get_points_multiplier(bot, user_id)
+            event_mult = await EventService(self.session).get_multiplier()
+            multiplier *= event_mult
 
         total = points * multiplier
         user.points += total

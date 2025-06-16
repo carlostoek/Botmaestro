@@ -26,6 +26,7 @@ from .config_menu import router as config_router
 from .channel_admin import router as channel_admin_router
 from .subscription_plans import router as subscription_plans_router
 from .game_admin import router as game_admin_router, show_users_page
+from .event_admin import router as event_admin_router
 
 router = Router()
 router.include_router(vip_router)
@@ -34,6 +35,7 @@ router.include_router(config_router)
 router.include_router(channel_admin_router)
 router.include_router(subscription_plans_router)
 router.include_router(game_admin_router)
+router.include_router(event_admin_router)
 
 
 @router.message(Command("admin_generate_token"))
@@ -122,18 +124,6 @@ async def admin_manage_content(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
-@router.callback_query(F.data == "admin_manage_events_sorteos")
-async def admin_manage_events(callback: CallbackQuery, session: AsyncSession):
-    if not is_admin(callback.from_user.id):
-        return await callback.answer()
-    await update_menu(
-        callback,
-        "Gesti\u00f3n de eventos y sorteos en desarrollo.",
-        get_back_kb("admin_main_menu"),
-        session,
-        "admin_manage_events_sorteos",
-    )
-    await callback.answer()
 
 
 @router.callback_query(F.data == "admin_bot_config")
@@ -174,7 +164,6 @@ IGNORED_CALLBACKS = {
     "admin_back",
     "admin_manage_users",
     "admin_manage_content",
-    "admin_manage_events_sorteos",
     "admin_bot_config",
     "admin_main_menu",
 }
