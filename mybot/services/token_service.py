@@ -70,6 +70,26 @@ class TokenService:
         await self.session.commit()
         return obj
 
+    async def create_vip_token(self, tariff_id: int) -> Token:
+        """Create a VIP subscription token for the given tariff."""
+        token_str = token_urlsafe(16)
+        obj = Token(token_string=token_str, tariff_id=tariff_id)
+        self.session.add(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
+
+    async def invalidate_vip_token(self, token_string: str) -> bool:
+        """Remove an unused VIP token so it can no longer be redeemed."""
+        stmt = select(Token).where(Token.token_string == token_string, Token.is_used == False)
+        result = await self.session.execute(stmt)
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return False
+        await self.session.delete(obj)
+        await self.session.commit()
+        return True
+
 
 async def validate_token(token: str, session: AsyncSession) -> str | None:
     """Validate a legacy VIP activation token and mark it as used."""

@@ -66,6 +66,48 @@ class SubscriptionService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def extend_subscription(self, user_id: int, days: int) -> VipSubscription:
+        """Extend an existing subscription or create one if missing."""
+        from datetime import timedelta
+
+        now = datetime.utcnow()
+        sub = await self.get_subscription(user_id)
+        new_exp = now + timedelta(days=days)
+        if sub:
+            if sub.expires_at and sub.expires_at > now:
+                sub.expires_at = sub.expires_at + timedelta(days=days)
+            else:
+                sub.expires_at = new_exp
+        else:
+            sub = VipSubscription(user_id=user_id, expires_at=new_exp)
+            self.session.add(sub)
+
+        user = await self.session.get(User, user_id)
+        if user:
+            user.role = "vip"
+            if user.vip_expires_at and user.vip_expires_at > now:
+                user.vip_expires_at = user.vip_expires_at + timedelta(days=days)
+            else:
+                user.vip_expires_at = new_exp
+            user.last_reminder_sent_at = None
+
+        await self.session.commit()
+        return sub
+
+    async def revoke_subscription(self, user_id: int) -> None:
+        """Immediately expire a user's subscription."""
+        now = datetime.utcnow()
+        sub = await self.get_subscription(user_id)
+        if sub:
+            sub.expires_at = now
+
+        user = await self.session.get(User, user_id)
+        if user:
+            user.role = "free"
+            user.vip_expires_at = None
+
+        await self.session.commit()
+
 
 async def get_admin_statistics(session: AsyncSession) -> dict:
     """Return statistics for the admin panel."""
