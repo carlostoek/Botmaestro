@@ -17,13 +17,15 @@ router = Router()
 VIP_CHANNEL_ID = CONFIG_VIP_CHANNEL_ID
 
 
-def _duration_to_timedelta(duration: str) -> timedelta:
+def _duration_to_timedelta(duration: int | str) -> timedelta:
     mapping = {
         "1_month": 30,
         "3_months": 90,
         "6_months": 180,
         "1_year": 365,
     }
+    if isinstance(duration, int):
+        return timedelta(days=duration)
     if duration in mapping:
         return timedelta(days=mapping[duration])
     if duration.endswith("_days") and duration[:-5].isdigit():
