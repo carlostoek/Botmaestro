@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.models import Reward, User
+from utils.text_utils import sanitize_text
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,12 @@ class RewardService:
         return True, "Compra exitosa. ¡Disfruta tu recompensa!"
 
     async def create_reward(self, name: str, description: str, cost: int, stock: int = -1) -> Reward:
-        new_reward = Reward(name=name, description=description, cost=cost, stock=stock)
+        new_reward = Reward(
+            name=sanitize_text(name),
+            description=sanitize_text(description),
+            cost=cost,
+            stock=stock,
+        )
         self.session.add(new_reward)
         await self.session.commit()
         await self.session.refresh(new_reward)

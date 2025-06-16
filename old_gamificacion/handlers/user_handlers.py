@@ -2,7 +2,12 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database.models import User, Mission, Reward, get_user_menu_state, set_user_menu_state
@@ -18,8 +23,14 @@ from utils.keyboard_utils import (
     get_root_menu, get_parent_menu, get_child_menu,  # <--- Estas fueron añadidas/confirmadas
     get_main_reply_keyboard  # <--- Asegúrate de que esta esté aquí también
 )
-from utils.message_utils import get_profile_message, get_mission_details_message, get_reward_details_message, get_ranking_message # Añadido get_ranking_message
+from utils.message_utils import (
+    get_profile_message,
+    get_mission_details_message,
+    get_reward_details_message,
+    get_ranking_message,  # Añadido get_ranking_message
+)
 from utils.messages import BOT_MESSAGES # <--- Asegúrate de que esta esté importada
+from utils.text_utils import sanitize_text
 
 from config import Config
 import asyncio
@@ -33,9 +44,9 @@ router = Router()
 async def _handle_start_flow(message: Message, session: AsyncSession, bot: Bot) -> None:
     """Common logic for /start handling once user is identified."""
     user_id = message.from_user.id
-    username = message.from_user.username
-    first_name = message.from_user.first_name
-    last_name = message.from_user.last_name
+    username = sanitize_text(message.from_user.username)
+    first_name = sanitize_text(message.from_user.first_name)
+    last_name = sanitize_text(message.from_user.last_name)
 
     user = await session.get(User, user_id)
     is_new_user = False
