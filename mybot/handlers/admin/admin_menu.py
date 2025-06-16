@@ -95,6 +95,13 @@ async def admin_game_entry(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
+@router.callback_query(F.data == "admin_game_test")
+async def admin_game_test(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.answer("Bot\u00f3n de prueba presionado", show_alert=True)
+
+
 @router.callback_query(F.data == "admin_back")
 async def admin_back(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
@@ -156,26 +163,3 @@ async def back_to_admin_main(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
-IGNORED_CALLBACKS = {
-    "admin_vip",
-    "admin_free",
-    "admin_game",
-    "admin_config",
-    "admin_channels",
-    "admin_wait_time",
-    "admin_back",
-    "admin_manage_users",
-    "admin_manage_content",
-    "admin_bot_config",
-    "admin_main_menu",
-}
-
-
-@router.callback_query(F.data.startswith("admin_"))
-async def admin_placeholder(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        return await callback.answer()
-    if callback.data in IGNORED_CALLBACKS:
-        await callback.answer()
-        raise SkipHandler()
-    await callback.answer("Funcionalidad en desarrollo.", show_alert=True)
