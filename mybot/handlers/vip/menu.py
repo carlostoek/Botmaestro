@@ -13,6 +13,7 @@ from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
 from services.mission_service import MissionService
 from database.models import User, set_user_menu_state
+from utils.text_utils import sanitize_text
 
 router = Router()
 
@@ -67,9 +68,9 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
     if not user:
         user = User(
             id=user_id,
-            username=callback.from_user.username,
-            first_name=callback.from_user.first_name,
-            last_name=callback.from_user.last_name,
+            username=sanitize_text(callback.from_user.username),
+            first_name=sanitize_text(callback.from_user.first_name),
+            last_name=sanitize_text(callback.from_user.last_name),
         )
         session.add(user)
         await session.commit()

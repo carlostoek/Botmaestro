@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from services.token_service import validate_token
 from services.subscription_service import SubscriptionService
 from database.models import User
+from utils.text_utils import sanitize_text
 from utils.config import VIP_CHANNEL_ID as CONFIG_VIP_CHANNEL_ID
 from services.achievement_service import AchievementService
 
@@ -46,9 +47,9 @@ async def activate_vip(message: Message, session: AsyncSession, bot: Bot):
     if not user:
         user = User(
             id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
+            username=sanitize_text(message.from_user.username),
+            first_name=sanitize_text(message.from_user.first_name),
+            last_name=sanitize_text(message.from_user.last_name),
         )
         session.add(user)
     user.role = "vip"

@@ -4,6 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import User
+from utils.text_utils import sanitize_text
 
 from keyboards.admin_main_kb import get_admin_main_kb
 from keyboards.subscription_kb import get_subscription_kb
@@ -23,9 +24,9 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
     if not user:
         user = User(
             id=user_id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
+            username=sanitize_text(message.from_user.username),
+            first_name=sanitize_text(message.from_user.first_name),
+            last_name=sanitize_text(message.from_user.last_name),
         )
         session.add(user)
         await session.commit()

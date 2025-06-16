@@ -6,6 +6,7 @@ from aiogram.filters.command import CommandObject
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import User
+from utils.text_utils import sanitize_text
 from services.token_service import TokenService
 from services.achievement_service import AchievementService
 from utils.config import VIP_CHANNEL_ID
@@ -31,9 +32,9 @@ async def start_with_token(message: Message, command: CommandObject, session: As
     if not user:
         user = User(
             id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
+            username=sanitize_text(message.from_user.username),
+            first_name=sanitize_text(message.from_user.first_name),
+            last_name=sanitize_text(message.from_user.last_name),
         )
         session.add(user)
 

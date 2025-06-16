@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models import Channel
+from utils.text_utils import sanitize_text
 
 
 class ChannelService:
@@ -12,11 +13,12 @@ class ChannelService:
 
     async def add_channel(self, chat_id: int, title: str | None = None) -> Channel:
         channel = await self.session.get(Channel, chat_id)
+        clean_title = sanitize_text(title) if title is not None else None
         if channel:
-            if title:
-                channel.title = title
+            if clean_title:
+                channel.title = clean_title
         else:
-            channel = Channel(id=chat_id, title=title)
+            channel = Channel(id=chat_id, title=clean_title)
             self.session.add(channel)
         await self.session.commit()
         await self.session.refresh(channel)
