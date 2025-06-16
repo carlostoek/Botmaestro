@@ -47,6 +47,10 @@ class MissionService:
                 return filtered_missions
         return missions
 
+    async def get_daily_active_missions(self, user_id: int | None = None) -> list[Mission]:
+        """Return missions of type 'daily' that are active today."""
+        return await self.get_active_missions(user_id=user_id, mission_type="daily")
+
     async def get_mission_by_id(self, mission_id: str) -> Mission | None:
         return await self.session.get(Mission, mission_id)
 
@@ -118,7 +122,7 @@ class MissionService:
              from services.point_service import PointService
              point_service = PointService(self.session)
 
-        await point_service.add_points(user_id, mission.points_reward)
+        await point_service.add_points(user_id, mission.reward_points)
 
         # Update last reset timestamps for daily/weekly missions
         if mission.type == "daily":
@@ -148,7 +152,7 @@ class MissionService:
             id=mission_id,
             name=sanitize_text(name),
             description=sanitize_text(description),
-            points_reward=reward_points,
+            reward_points=reward_points,
             type=mission_type,
             target_value=target_value,
             duration_days=duration_days,
@@ -197,11 +201,11 @@ class MissionService:
             if progress >= mission.target_value:
                 record.completed = True
                 record.completed_at = datetime.datetime.utcnow()
-                await self.point_service.add_points(user_id, mission.points_reward, bot=bot)
+                await self.point_service.add_points(user_id, mission.reward_points, bot=bot)
                 if bot:
                     await bot.send_message(
                         user_id,
-                        f"🎉 ¡Has completado la misión {mission.name}! +{mission.points_reward} puntos",
+                        f"🎉 ¡Has completado la misión {mission.name}! +{mission.reward_points} puntos",
                     )
         await self.session.commit()
 

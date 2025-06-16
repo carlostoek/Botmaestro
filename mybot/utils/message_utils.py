@@ -55,7 +55,7 @@ async def get_profile_message(user: User, active_missions: list[Mission], sessio
     missions_text = BOT_MESSAGES["profile_no_active_missions"]
     if active_missions:
         missions_list = [
-            f"• {mission.name} ({mission.points_reward} Puntos)"
+            f"• {mission.name} ({mission.reward_points} Puntos)"
             for mission in active_missions
         ]
         missions_text = BOT_MESSAGES["profile_active_missions_title"] + "\n" + "\n".join(missions_list)
@@ -75,7 +75,7 @@ async def get_mission_details_message(mission: Mission) -> str:
     return BOT_MESSAGES["mission_details_text"].format(
         mission_name=mission.name,
         mission_description=mission.description,
-        points_reward=mission.points_reward,
+        points_reward=mission.reward_points,
         mission_type=mission.type.capitalize()
     )
 

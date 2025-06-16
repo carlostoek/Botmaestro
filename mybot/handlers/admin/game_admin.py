@@ -424,7 +424,7 @@ async def admin_view_active_missions(callback: CallbackQuery, session: AsyncSess
         if m.duration_days:
             end = m.created_at + datetime.timedelta(days=m.duration_days)
             remaining = str((end - now).days)
-        lines.append(f"🗒️ {m.name} | 📊 {m.target_value} | 🎁 {m.points_reward} | ⏳ {remaining}d")
+        lines.append(f"🗒️ {m.name} | 📊 {m.target_value} | 🎁 {m.reward_points} | ⏳ {remaining}d")
     text = "Misiones activas:" if lines else "No hay misiones activas."
     if lines:
         text += "\n" + "\n".join(lines)
