@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import User
 from services.token_service import TokenService
+from services.achievement_service import AchievementService
 from utils.config import VIP_CHANNEL_ID
 
 router = Router()
@@ -40,6 +41,8 @@ async def start_with_token(message: Message, command: CommandObject, session: As
     user.vip_expires_at = datetime.utcnow() + timedelta(days=duration)
     user.last_reminder_sent_at = None
     await session.commit()
+    ach_service = AchievementService(session)
+    await ach_service.check_vip_achievement(user.id, bot=bot)
 
     invite_link = None
     if VIP_CHANNEL_ID_CONST:
