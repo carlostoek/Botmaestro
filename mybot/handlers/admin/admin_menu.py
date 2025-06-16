@@ -87,10 +87,10 @@ async def admin_game_entry(callback: CallbackQuery, session: AsyncSession):
         return await callback.answer()
     await update_menu(
         callback,
-        "Bienvenido al panel de administración, Diana.",
-        get_admin_main_keyboard(),
+        "Gestionar Contenido / Juego",
+        get_admin_manage_content_keyboard(),
         session,
-        "admin_main",
+        "admin_manage_content",
     )
     await callback.answer()
 

@@ -34,6 +34,7 @@ class PointsMiddleware(BaseMiddleware):
                         return await handler(event, data)
 
                     await service.award_message(event.from_user.id, bot)
+                    await mission_service.update_progress(event.from_user.id, "messages", bot=bot)
                     completed = await mission_service.increment_challenge_progress(
                         event.from_user.id,
                         "messages",
@@ -59,6 +60,7 @@ class PointsMiddleware(BaseMiddleware):
                         session.add(user)
                         await session.commit()
                     await service.award_reaction(user, message_id, bot)
+                    await mission_service.update_progress(user_id, "reaction", bot=bot)
                     await bot.send_message(user_id, BOT_MESSAGES["reaction_registered"])
                     completed = await mission_service.increment_challenge_progress(
                         user_id,

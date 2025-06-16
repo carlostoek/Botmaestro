@@ -67,16 +67,27 @@ class UserAchievement(AsyncAttrs, Base):
 
 class Mission(AsyncAttrs, Base):
     __tablename__ = "missions"
-    id = Column(String, primary_key=True, unique=True) # e.g., 'daily_login', 'event_trivia_challenge'
+    id = Column(String, primary_key=True, unique=True)
     name = Column(String, nullable=False)
     description = Column(Text)
     points_reward = Column(Integer, default=0)
-    type = Column(String, default="one_time") # 'daily', 'weekly', 'one_time', 'event', 'reaction'
+    type = Column(String, default="one_time")
+    target_value = Column(Integer, default=1)
+    duration_days = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    requires_action = Column(Boolean, default=False) # True if requires a specific button click/action outside the bot's menu
-    # action_data puede ser usado para especificar, por ejemplo, qué 'button_id' de reacción completa la misión
-    action_data = Column(JSON, nullable=True) # e.g., {'button_id': 'like_post_1'} or {'target_message_id': 12345}
+    requires_action = Column(Boolean, default=False)
+    action_data = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=func.now())
+
+
+class UserMission(AsyncAttrs, Base):
+    __tablename__ = "user_missions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.id"))
+    mission_id = Column(String, ForeignKey("missions.id"))
+    progress = Column(Integer, default=0)
+    completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
 
 class Event(AsyncAttrs, Base):
     __tablename__ = "events"

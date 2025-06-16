@@ -123,9 +123,9 @@ def get_admin_manage_content_keyboard():
 def get_admin_content_missions_keyboard():
     """Keyboard for mission management options."""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✏️ Crear Misión", callback_data="admin_create_mission")],
-        [InlineKeyboardButton(text="🔄 Activar / Desactivar Misión", callback_data="admin_toggle_mission")],
-        [InlineKeyboardButton(text="📃 Ver Misiones Activas", callback_data="admin_view_active_missions")],
+        [InlineKeyboardButton(text="🆕 Crear misión", callback_data="admin_create_mission")],
+        [InlineKeyboardButton(text="📋 Ver misiones activas", callback_data="admin_view_missions")],
+        [InlineKeyboardButton(text="🗑️ Eliminar misión", callback_data="admin_delete_mission")],
         [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")]
     ])
     return keyboard
