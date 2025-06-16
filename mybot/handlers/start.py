@@ -18,6 +18,21 @@ router = Router()
 async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
     user_id = message.from_user.id
 
+    retro_message = (
+        "┌───────────────────────┐\n"
+        "│   💾 *BIENVENIDO* 💾   │\n"
+        "├───────────────────────┤\n"
+        f"│  USUARIO: {message.from_user.username or message.from_user.first_name}  │\n"
+        "│  PASSWORD: ********   │\n"
+        "│                       │\n"
+        "│  [1] ENTRAR AL BOT    │\n"
+        "│  [2] CARGAR PARTIDA   │\n"
+        "└───────────────────────┘\n"
+        "⚙️ *Escribe /start para comenzar*"
+    )
+
+    await bot.send_message(message.chat.id, retro_message, parse_mode="Markdown")
+
     # Ensure the user exists in the database so profile related features work
     user = await session.get(User, user_id)
     if not user:
