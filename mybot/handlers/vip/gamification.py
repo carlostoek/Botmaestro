@@ -9,26 +9,42 @@ from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from database.models import User, Mission, Reward, get_user_menu_state, set_user_menu_state
+from database.models import (
+    User,
+    Mission,
+    Reward,
+    get_user_menu_state,
+    set_user_menu_state,
+)
 from utils.text_utils import sanitize_text
 from services.point_service import PointService
 from services.achievement_service import AchievementService, ACHIEVEMENTS
 from services.mission_service import MissionService
 from services.reward_service import RewardService
 from utils.keyboard_utils import (
-    get_main_menu_keyboard, get_profile_keyboard, get_missions_keyboard,
-    get_reward_keyboard, get_confirm_purchase_keyboard, get_ranking_keyboard,
-    get_reaction_keyboard, get_admin_main_keyboard,
-    get_root_menu, get_parent_menu, get_child_menu,
-    get_main_reply_keyboard
+    get_main_menu_keyboard,
+    get_profile_keyboard,
+    get_missions_keyboard,
+    get_reward_keyboard,
+    get_confirm_purchase_keyboard,
+    get_ranking_keyboard,
+    get_reaction_keyboard,
+    get_admin_main_keyboard,
+    get_root_menu,
+    get_parent_menu,
+    get_child_menu,
+    get_main_reply_keyboard,
 )
 from utils.message_utils import (
     get_profile_message,
     get_mission_details_message,
     get_reward_details_message,
-    get_ranking_message
+    get_ranking_message,
 )
 from utils.messages import BOT_MESSAGES
+from utils.user_roles import is_admin
+from keyboards.admin_main_kb import get_admin_main_kb
+from utils.menu_utils import update_menu
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,11 +55,20 @@ router = Router()
 @router.callback_query(F.data == "menu_principal")
 async def go_to_main_menu_from_inline(callback: CallbackQuery, session: AsyncSession):
     user_id = callback.from_user.id
-    await set_user_menu_state(session, user_id, "root")
-    await callback.message.edit_text(
-        BOT_MESSAGES["start_welcome_returning_user"], # Mensaje consistente al volver al menú principal
-        reply_markup=get_main_menu_keyboard() # Teclado inline principal
-    )
+    if is_admin(user_id):
+        await update_menu(
+            callback,
+            "Menú de administración",
+            get_admin_main_kb(),
+            session,
+            "admin_main",
+        )
+    else:
+        await set_user_menu_state(session, user_id, "root")
+        await callback.message.edit_text(
+            BOT_MESSAGES["start_welcome_returning_user"],
+            reply_markup=get_main_menu_keyboard(),
+        )
     await callback.answer()
 
 # Handler genérico para callbacks de menú (profile, missions, rewards, ranking, back)
