@@ -3,7 +3,12 @@ import datetime
 import random
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from database.models import Mission, User
+from database.models import (
+    Mission,
+    User,
+    Challenge,
+    UserChallengeProgress,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,6 +16,8 @@ logger = logging.getLogger(__name__)
 class MissionService:
     def __init__(self, session: AsyncSession):
         self.session = session
+        from services.point_service import PointService
+        self.point_service = PointService(session)
 
     async def get_active_missions(self, user_id: int = None, mission_type: str = None) -> list[Mission]:
         """
@@ -146,3 +153,34 @@ class MissionService:
             await self.session.commit()
             return True
         return False
+
+    async def get_active_challenges(self, challenge_type: str | None = None) -> list[Challenge]:
+        now = datetime.datetime.utcnow()
+        stmt = select(Challenge).where(Challenge.start_date <= now, Challenge.end_date >= now)
+        if challenge_type:
+            stmt = stmt.where(Challenge.type == challenge_type)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def increment_challenge_progress(self, user_id: int, goal_type: str, increment: int = 1, bot=None) -> list[Challenge]:
+        """Increment progress for active challenges matching goal_type.
+        Returns list of challenges completed in this call."""
+        completed = []
+        challenges = await self.get_active_challenges()
+        for challenge in challenges:
+            if challenge.goal_type != goal_type:
+                continue
+            prog = await self.session.get(UserChallengeProgress, {"user_id": user_id, "challenge_id": challenge.id})
+            if not prog:
+                prog = UserChallengeProgress(user_id=user_id, challenge_id=challenge.id)
+                self.session.add(prog)
+            if prog.completed:
+                continue
+            prog.current_value += increment
+            if prog.current_value >= challenge.goal_value:
+                prog.completed = True
+                prog.completed_at = datetime.datetime.utcnow()
+                completed.append(challenge)
+                await self.point_service.add_points(user_id, 100, bot=bot)
+        await self.session.commit()
+        return completed
