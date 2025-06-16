@@ -61,7 +61,9 @@ async def generate_token_callback(callback: CallbackQuery, session: AsyncSession
     await session.commit()
     bot_username = (await bot.get_me()).username
     link = f"https://t.me/{bot_username}?start={token_string}"
-    await callback.message.edit_text(f"Enlace generado: {link}")
+    await callback.message.edit_text(
+        f"Enlace generado: {link}", reply_markup=get_back_kb("admin_vip")
+    )
     await callback.answer()
 
 
