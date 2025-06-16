@@ -5,6 +5,7 @@ def get_admin_vip_config_kb():
     builder = InlineKeyboardBuilder()
     builder.button(text="📄 Tarifas", callback_data="config_tarifas")
     builder.button(text="✉️ Configurar Mensajes", callback_data="vip_config_messages")
+    builder.button(text="🎯 Gestionar Misiones", callback_data="vip_manage_missions")
     builder.button(text="🔙 Volver", callback_data="admin_vip")
     builder.adjust(1)
     return builder.as_markup()
@@ -24,5 +25,14 @@ def get_vip_messages_kb():
     builder.button(text="📣 Mensaje de recordatorio", callback_data="edit_vip_reminder")
     builder.button(text="👋 Mensaje de despedida", callback_data="edit_vip_farewell")
     builder.button(text="🔙 Volver", callback_data="vip_config")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_vip_missions_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(text="➕ Crear misión", callback_data="vip_create_mission")
+    builder.button(text="⚡ Activar/Desactivar", callback_data="vip_toggle_mission")
+    builder.button(text="🔙 Volver", callback_data="vip_manage_missions")
     builder.adjust(1)
     return builder.as_markup()
