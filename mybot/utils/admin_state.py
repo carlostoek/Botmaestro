@@ -84,6 +84,14 @@ class AdminMissionStates(StatesGroup):
     creating_mission_duration = State()
 
 
+class AdminBadgeStates(StatesGroup):
+    creating_badge_name = State()
+    creating_badge_description = State()
+    creating_badge_requirement = State()
+    creating_badge_emoji = State()
+    deleting_badge = State()
+
+
 class AdminDailyGiftStates(StatesGroup):
     """States for configuring the daily gift."""
 
