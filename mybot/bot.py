@@ -11,6 +11,7 @@ from handlers import subscriptions
 from handlers.channel_access import router as channel_access_router
 from handlers.user import start_token
 from handlers.vip import menu as vip
+from handlers.vip import gamification
 from handlers.admin import admin_router
 from utils.config import BOT_TOKEN
 from services import channel_request_scheduler, vip_subscription_scheduler
@@ -47,6 +48,7 @@ async def main() -> None:
     dp.include_router(start.router)
     dp.include_router(admin_router)
     dp.include_router(vip.router)
+    dp.include_router(gamification.router)
     dp.include_router(subscriptions.router)
     dp.include_router(free_user.router)
     dp.include_router(channel_access_router)

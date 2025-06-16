@@ -6,14 +6,13 @@ from aiogram.filters import Command
 from datetime import datetime
 
 from keyboards.vip_kb import get_vip_kb
-from keyboards.vip_game_kb import get_game_menu_kb
 from utils.user_roles import is_vip_member
-from utils.keyboard_utils import get_back_keyboard
+from utils.keyboard_utils import get_back_keyboard, get_main_menu_keyboard
 from utils.messages import BOT_MESSAGES
 from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
 from services.mission_service import MissionService
-from database.models import User
+from database.models import User, set_user_menu_state
 
 router = Router()
 
@@ -36,7 +35,12 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
         return await callback.answer()
     sub_service = SubscriptionService(session)
     sub = await sub_service.get_subscription(callback.from_user.id)
-    text = "No registrada" if not sub else f"Válida hasta {sub.expires_at}"
+    if not sub:
+        text = "No registrada"
+    elif sub.expires_at:
+        text = f"Válida hasta {sub.expires_at:%d/%m/%Y}"
+    else:
+        text = "Válida sin fecha de expiración"
     await callback.message.edit_text(text, reply_markup=get_vip_kb())
     await callback.answer()
 
@@ -46,8 +50,10 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id):
         return await callback.answer()
     await callback.message.edit_text(
-        "Accede al Juego del Diván", reply_markup=get_game_menu_kb()
+        BOT_MESSAGES["start_welcome_returning_user"],
+        reply_markup=get_main_menu_keyboard(),
     )
+    await set_user_menu_state(session, callback.from_user.id, "root")
     await callback.answer()
 
 
