@@ -11,7 +11,6 @@ from utils.keyboard_utils import (
     get_admin_manage_users_keyboard,
     get_admin_users_list_keyboard,
     get_back_keyboard,
-    get_custom_reaction_keyboard,
     get_admin_manage_content_keyboard,
     get_admin_content_missions_keyboard,
     get_admin_content_badges_keyboard,
@@ -34,6 +33,7 @@ from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
 from services.badge_service import BadgeService
+from services.message_service import MessageService
 
 router = Router()
 
@@ -213,32 +213,17 @@ async def admin_send_channel_post(callback: CallbackQuery, state: FSMContext):
 async def process_channel_post(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
     if not is_admin(message.from_user.id):
         return
-    config = ConfigService(session)
-    buttons_raw = await config.get_value("reaction_buttons")
-    buttons = [b.strip() for b in buttons_raw.split(";") if b.strip()] if buttons_raw else ["👍", "👎"]
-
-    vip_id = await config.get_vip_channel_id()
-    if not vip_id:
-        await message.answer("Canal VIP no configurado.", reply_markup=get_admin_manage_content_keyboard())
-        await state.clear()
-        return
-    sent = await bot.send_message(
-        chat_id=vip_id,
-        text=message.text,
-        reply_markup=get_custom_reaction_keyboard(0, buttons),
-    )
-
-    real_id = sent.message_id
-    await bot.edit_message_reply_markup(
-        chat_id=vip_id,
-        message_id=real_id,
-        reply_markup=get_custom_reaction_keyboard(real_id, buttons),
-    )
-
-    await message.answer(
-        f"Mensaje publicado con ID {real_id}",
-        reply_markup=get_admin_manage_content_keyboard(),
-    )
+    service = MessageService(session, bot)
+    sent = await service.send_interactive_post(message.text, "vip")
+    if not sent:
+        await message.answer(
+            "Canal VIP no configurado.", reply_markup=get_admin_manage_content_keyboard()
+        )
+    else:
+        await message.answer(
+            f"Mensaje publicado con ID {sent.message_id}",
+            reply_markup=get_admin_manage_content_keyboard(),
+        )
     await state.clear()
 
 
