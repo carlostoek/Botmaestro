@@ -276,13 +276,13 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
     completed, completed_mission_obj = await mission_service.complete_mission(user_id, mission_id)
 
     if completed:
-        await point_service.add_points(user_id, completed_mission_obj.points_reward, bot=callback.bot)
+        await point_service.add_points(user_id, completed_mission_obj.reward_points, bot=callback.bot)
         
         # Opcional: Otorgar un logro por la primera misión
         if not user.missions_completed: # Si es la primera misión del usuario
              await achievement_service.grant_achievement(user_id, "first_mission")
 
-        alert_message = f"🎉 ¡Misión '{completed_mission_obj.name}' completada! Ganaste `{completed_mission_obj.points_reward}` puntos."
+        alert_message = f"🎉 ¡Misión '{completed_mission_obj.name}' completada! Ganaste `{completed_mission_obj.reward_points}` puntos."
 
         await callback.answer(alert_message, show_alert=True)
 
@@ -353,8 +353,8 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
             if not is_completed_for_period:
                 completed, mission_obj = await mission_service.complete_mission(user_id, mission.id, target_message_id=target_message_id)
                 if completed:
-                    mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**! Ganaste `{mission_obj.points_reward}` puntos adicionales."
-                    await point_service.add_points(user_id, mission_obj.points_reward, bot=callback.bot)
+                    mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**! Ganaste `{mission_obj.reward_points}` puntos adicionales."
+                    await point_service.add_points(user_id, mission_obj.reward_points, bot=callback.bot)
 
     alert_message = f"¡Reacción registrada! Ganaste `{base_points_for_reaction}` puntos."
     alert_message += mission_completed_message

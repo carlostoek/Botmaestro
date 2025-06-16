@@ -67,10 +67,11 @@ class UserAchievement(AsyncAttrs, Base):
 
 class Mission(AsyncAttrs, Base):
     __tablename__ = "missions"
+
     id = Column(String, primary_key=True, unique=True)
     name = Column(String, nullable=False)
     description = Column(Text)
-    points_reward = Column(Integer, default=0)
+    reward_points = Column(Integer, default=0)
     type = Column(String, default="one_time")
     target_value = Column(Integer, default=1)
     duration_days = Column(Integer, default=0)
