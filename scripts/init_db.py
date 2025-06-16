@@ -10,17 +10,17 @@ DEFAULT_MISSIONS = [
         "name": "Daily Check-in",
         "description": "Registra tu actividad diaria con /checkin",
         "points_reward": 10,
-        "mission_type": "daily",
-        "requires_action": False,
-        "action_data": None,
+        "mission_type": "login_streak",
+        "target_value": 1,
+        "duration_days": 0,
     },
     {
         "name": "Primer Mensaje",
         "description": "Envía tu primer mensaje en el chat",
         "points_reward": 5,
-        "mission_type": "one_time",
-        "requires_action": False,
-        "action_data": None,
+        "mission_type": "messages",
+        "target_value": 1,
+        "duration_days": 0,
     },
 ]
 
@@ -39,10 +39,10 @@ async def main() -> None:
                 await mission_service.create_mission(
                     m["name"],
                     m["description"],
-                    m["points_reward"],
                     m["mission_type"],
-                    m["requires_action"],
-                    m["action_data"],
+                    m.get("target_value", 1),
+                    m["points_reward"],
+                    m.get("duration_days", 0),
                 )
     print("Database initialised")
 

@@ -6,6 +6,7 @@ from sqlalchemy import select, update
 from database.models import (
     Mission,
     User,
+    UserMission,
     Challenge,
     UserChallengeProgress,
 )
@@ -28,7 +29,7 @@ class MissionService:
         if mission_type:
             stmt = stmt.where(Mission.type == mission_type)
         result = await self.session.execute(stmt)
-        missions = result.scalars().all()
+        missions = [m for m in result.scalars().all() if not m.duration_days or (m.created_at + datetime.timedelta(days=m.duration_days)) > datetime.datetime.utcnow()]
 
         if user_id: # Filter out completed missions for a specific user based on reset rules
             user = await self.session.get(User, user_id)
@@ -130,17 +131,25 @@ class MissionService:
         logger.info(f"User {user_id} successfully completed mission {mission_id} (Type: {mission.type}, Message: {target_message_id}).")
         return True, mission
 
-    async def create_mission(self, name: str, description: str, points_reward: int, mission_type: str, requires_action: bool = False, action_data: dict = None) -> Mission:
+    async def create_mission(
+        self,
+        name: str,
+        description: str,
+        mission_type: str,
+        target_value: int,
+        reward_points: int,
+        duration_days: int = 0,
+    ) -> Mission:
         mission_id = f"{mission_type}_{sanitize_text(name).lower().replace(' ', '_').replace('.', '').replace(',', '')}"
         new_mission = Mission(
             id=mission_id,
             name=sanitize_text(name),
             description=sanitize_text(description),
-            points_reward=points_reward,
+            points_reward=reward_points,
             type=mission_type,
+            target_value=target_value,
+            duration_days=duration_days,
             is_active=True,
-            requires_action=requires_action,
-            action_data=action_data
         )
         self.session.add(new_mission)
         await self.session.commit()
@@ -151,6 +160,52 @@ class MissionService:
         mission = await self.session.get(Mission, mission_id)
         if mission:
             mission.is_active = status
+            await self.session.commit()
+            return True
+        return False
+
+    async def update_progress(
+        self,
+        user_id: int,
+        mission_type: str,
+        *,
+        increment: int = 1,
+        current_value: int | None = None,
+        bot=None,
+    ) -> None:
+        missions = await self.get_active_missions(mission_type=mission_type)
+        for mission in missions:
+            stmt = select(UserMission).where(
+                UserMission.user_id == user_id, UserMission.mission_id == mission.id
+            )
+            result = await self.session.execute(stmt)
+            record = result.scalar_one_or_none()
+            if not record:
+                record = UserMission(user_id=user_id, mission_id=mission.id)
+                self.session.add(record)
+            if record.completed:
+                continue
+            if mission_type == "login_streak" and current_value is not None:
+                progress = current_value
+                record.progress = progress
+            else:
+                record.progress += increment
+                progress = record.progress
+            if progress >= mission.target_value:
+                record.completed = True
+                record.completed_at = datetime.datetime.utcnow()
+                await self.point_service.add_points(user_id, mission.points_reward, bot=bot)
+                if bot:
+                    await bot.send_message(
+                        user_id,
+                        f"🎉 ¡Has completado la misión {mission.name}! +{mission.points_reward} puntos",
+                    )
+        await self.session.commit()
+
+    async def delete_mission(self, mission_id: str) -> bool:
+        mission = await self.session.get(Mission, mission_id)
+        if mission:
+            await self.session.delete(mission)
             await self.session.commit()
             return True
         return False
