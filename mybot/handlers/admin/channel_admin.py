@@ -9,13 +9,15 @@ from utils.menu_utils import update_menu
 from keyboards.admin_channels_kb import get_admin_channels_kb, get_wait_time_kb
 from keyboards.common import get_back_kb
 from services.channel_service import ChannelService
+from services.config_service import ConfigService
 from database.models import BotConfig
 
 router = Router()
 
 
 class ChannelStates(StatesGroup):
-    waiting_for_id = State()
+    waiting_for_vip_channel_id = State()
+    waiting_for_free_channel_id = State()
 
 
 @router.callback_query(F.data == "admin_channels")
@@ -44,41 +46,57 @@ async def prompt_add_channel(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     await callback.message.edit_text(
-        "Reenvía un mensaje del canal o envía su ID numérico.",
+        "Ingresa el ID del canal VIP o reenv\u00eda un mensaje del canal aqu\u00ed.\n"
+        "Puedes escribir directamente el ID del canal (debes ser administrador del canal para obtenerlo), "
+        "o puedes reenviar un mensaje del canal aqu\u00ed y el bot extraer\u00e1 autom\u00e1ticamente el ID del remitente.",
         reply_markup=get_back_kb("admin_channels"),
     )
-    await state.set_state(ChannelStates.waiting_for_id)
+    await state.set_state(ChannelStates.waiting_for_vip_channel_id)
     await callback.answer()
 
 
-@router.message(ChannelStates.waiting_for_id)
-async def add_channel(message: Message, state: FSMContext, session: AsyncSession):
+@router.message(ChannelStates.waiting_for_vip_channel_id)
+async def receive_vip_channel(message: Message, state: FSMContext, session: AsyncSession):
     if not is_admin(message.from_user.id):
         return
     chat_id = None
-    title = None
     if message.forward_from_chat:
         chat_id = message.forward_from_chat.id
-        title = message.forward_from_chat.title
     else:
         try:
             chat_id = int(message.text.strip())
-            chat = await message.bot.get_chat(chat_id)
-            title = chat.title
         except (TypeError, ValueError):
-            await message.answer("No se pudo obtener el ID del canal. Intenta de nuevo.")
+            await message.answer("ID inv\u00e1lido. Intenta de nuevo.")
             return
-    service = ChannelService(session)
-    await service.add_channel(chat_id, title)
-    channels = await service.list_channels()
-    if channels:
-        lines = [f"- {c.title or c.id} (<code>{c.id}</code>)" for c in channels]
-        text = "Canal agregado.\n\n" + "\n".join(lines)
-    else:
-        text = f"Canal {chat_id} agregado."
+    await state.update_data(vip_channel_id=chat_id)
     await message.answer(
-        text,
-        reply_markup=get_admin_channels_kb(channels),
+        "Ahora ingresa el ID del canal FREE o reenv\u00eda un mensaje del canal.",
+        reply_markup=get_back_kb("admin_channels"),
+    )
+    await state.set_state(ChannelStates.waiting_for_free_channel_id)
+
+
+@router.message(ChannelStates.waiting_for_free_channel_id)
+async def receive_free_channel(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    chat_id = None
+    if message.forward_from_chat:
+        chat_id = message.forward_from_chat.id
+    else:
+        try:
+            chat_id = int(message.text.strip())
+        except (TypeError, ValueError):
+            await message.answer("ID inv\u00e1lido. Intenta de nuevo.")
+            return
+    data = await state.get_data()
+    vip_id = int(data.get("vip_channel_id"))
+    config = ConfigService(session)
+    await config.set_vip_channel_id(vip_id)
+    await config.set_free_channel_id(chat_id)
+    await message.answer(
+        f"Canales registrados correctamente. Canal VIP: {vip_id}, Canal FREE: {chat_id}",
+        reply_markup=get_admin_channels_kb(await ChannelService(session).list_channels()),
     )
     await state.clear()
 
