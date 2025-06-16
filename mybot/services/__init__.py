@@ -11,6 +11,7 @@ from .plan_service import SubscriptionPlanService
 from .channel_service import ChannelService
 from .event_service import EventService
 from .raffle_service import RaffleService
+from .message_service import MessageService
 from .scheduler import channel_request_scheduler, vip_subscription_scheduler
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "vip_subscription_scheduler",
     "EventService",
     "RaffleService",
+    "MessageService",
 ]

@@ -276,6 +276,18 @@ class UserChallengeProgress(AsyncAttrs, Base):
     completed_at = Column(DateTime, nullable=True)
 
 
+class ButtonReaction(AsyncAttrs, Base):
+    """Stores reactions made on interactive channel posts."""
+
+    __tablename__ = "button_reactions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    message_id = Column(BigInteger, nullable=False)
+    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
+    reaction_type = Column(String, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+
 # Funciones para manejar el estado del menú del usuario
 async def get_user_menu_state(session, user_id: int) -> str:
     result = await session.execute(select(User).where(User.id == user_id))

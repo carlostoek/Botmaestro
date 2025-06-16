@@ -13,6 +13,7 @@ from handlers.channel_access import router as channel_access_router
 from handlers.user import start_token
 from handlers.vip import menu as vip
 from handlers.vip import gamification
+from handlers.interactive_post import router as interactive_post_router
 from handlers.admin import admin_router
 from utils.config import BOT_TOKEN, VIP_IDS, VIP_CHANNEL_ID
 import logging
@@ -55,6 +56,7 @@ async def main() -> None:
     dp.include_router(admin_router)
     dp.include_router(vip.router)
     dp.include_router(gamification.router)
+    dp.include_router(interactive_post_router)
     dp.include_router(daily_gift.router)
     dp.include_router(minigames.router)
     dp.include_router(subscriptions.router)
