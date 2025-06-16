@@ -33,9 +33,14 @@ VIP_IDS: List[int] = [
 # of ``0`` disables VIP checks and treats all users as non‑VIP.
 VIP_CHANNEL_ID = int(os.environ.get("VIP_CHANNEL_ID", "0"))
 
+# ID of the free Telegram channel used for basic access. A value of ``0``
+# disables handling of free channel join requests.
+FREE_CHANNEL_ID = int(os.environ.get("FREE_CHANNEL_ID", "0"))
+
 class Config:
     BOT_TOKEN = BOT_TOKEN
     ADMIN_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
     CHANNEL_ID = VIP_CHANNEL_ID
+    FREE_CHANNEL_ID = FREE_CHANNEL_ID
     VIP_IDS = VIP_IDS
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///gamification.db")
