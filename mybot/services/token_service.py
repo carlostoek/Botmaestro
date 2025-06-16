@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from database.models import InviteToken, SubscriptionToken, Token, Tariff
 from services.achievement_service import AchievementService
+from aiogram import Bot
 
 
 class TokenService:
@@ -37,7 +38,7 @@ class TokenService:
         await self.session.commit()
         return tariff.duration_days
 
-    async def use_token(self, token: str, user_id: int) -> bool:
+    async def use_token(self, token: str, user_id: int, *, bot: Bot | None = None) -> bool:
         stmt = select(InviteToken).where(InviteToken.token == token)
         result = await self.session.execute(stmt)
         obj = result.scalar_one_or_none()
@@ -47,7 +48,7 @@ class TokenService:
         obj.used_at = datetime.utcnow()
         await self.session.commit()
         ach_service = AchievementService(self.session)
-        await ach_service.check_invite_achievements(obj.created_by)
+        await ach_service.check_invite_achievements(obj.created_by, bot=bot)
         return True
 
     async def create_subscription_token(self, plan_id: int, created_by: int) -> SubscriptionToken:

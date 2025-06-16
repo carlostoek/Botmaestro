@@ -1,5 +1,5 @@
 # utils/message_utils.py
-from database.models import User, Mission, Reward
+from database.models import User, Mission, Reward, UserAchievement
 from services.level_service import LevelService
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.achievement_service import ACHIEVEMENTS
@@ -23,27 +23,32 @@ async def get_profile_message(user: User, active_missions: list[Mission], sessio
         points_to_next_level_text = BOT_MESSAGES["profile_max_level"]
 
 
+
     # Usar el mensaje personalizado para no logros
     achievements_text = BOT_MESSAGES["profile_no_achievements"]
-    if user.achievements:
+    stmt = select(UserAchievement).where(UserAchievement.user_id == user.id)
+    result = await session.execute(stmt)
+    records = result.scalars().all()
+    if records:
         granted_achievements_list = []
-        for ach_id, timestamp_str in user.achievements.items():
-            if ach_id in ACHIEVEMENTS:
+        for rec in records:
+            ach_data = ACHIEVEMENTS.get(rec.achievement_id)
+            if ach_data:
                 granted_achievements_list.append({
-                    "id": ach_id,
-                    "name": ACHIEVEMENTS[ach_id].get("name", ach_id),
-                    "icon": ACHIEVEMENTS[ach_id].get("icon", ""),
-                    "granted_at": timestamp_str
+                    "id": rec.achievement_id,
+                    "name": ach_data.get("name", rec.achievement_id),
+                    "icon": ach_data.get("icon", ""),
+                    "granted_at": rec.unlocked_at.isoformat(),
                 })
-        # Ordenar logros por fecha de concesión si es necesario
-        granted_achievements_list.sort(key=lambda x: x['granted_at'])
-        
+        granted_achievements_list.sort(key=lambda x: x["granted_at"])
+
         achievements_list = [
             f"{ach['icon']} {ach['name']} (Desbloqueado el: {datetime.datetime.fromisoformat(ach['granted_at']).strftime('%d/%m/%Y')})"
             for ach in granted_achievements_list
         ]
-        achievements_text = BOT_MESSAGES["profile_achievements_title"] + "\n" + "\n".join(achievements_list)
-
+        achievements_text = (
+            BOT_MESSAGES["profile_achievements_title"] + "\n" + "\n".join(achievements_list)
+        )
 
     # Usar el mensaje personalizado para no misiones activas
     missions_text = BOT_MESSAGES["profile_no_active_missions"]
