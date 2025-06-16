@@ -55,11 +55,19 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
 
     if menu_type == "profile":
         user = await session.get(User, user_id)
-        point_service = PointService(session)
-        achievement_service = AchievementService(session)
+        if not user:
+            user = User(
+                id=user_id,
+                username=callback.from_user.username,
+                first_name=callback.from_user.first_name,
+                last_name=callback.from_user.last_name,
+            )
+            session.add(user)
+            await session.commit()
+
         mission_service = MissionService(session)
-        active_missions = await mission_service.get_active_missions(user_id=user_id) # Pasa el user_id para filtrar misiones
-        
+        active_missions = await mission_service.get_active_missions(user_id=user_id)
+
         message_text = await get_profile_message(user, active_missions, session)
         keyboard = get_profile_keyboard()
         new_state = "profile"
