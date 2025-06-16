@@ -137,10 +137,12 @@ class Badge(AsyncAttrs, Base):
     __tablename__ = "badges"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
+    name = Column(String, unique=True, nullable=False)
     description = Column(String, nullable=True)
-    requirement = Column(String, nullable=False)
-    emoji = Column(String, nullable=True)
+    icon = Column(String, nullable=True)
+    condition_type = Column(String, nullable=False)
+    condition_value = Column(Integer, nullable=False)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
 
 

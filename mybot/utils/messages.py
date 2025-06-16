@@ -109,3 +109,20 @@ BOT_MESSAGES = {
     "reward_created": "✅ Recompensa creada.",
     "invalid_number": "Ingresa un número válido.",
 }
+
+# Textos descriptivos para las insignias disponibles en el sistema.
+# El identificador sirve como clave de referencia interna.
+BADGE_TEXTS = {
+    "first_message": {
+        "name": "Primer Mensaje",
+        "description": "Envía tu primer mensaje en el chat",
+    },
+    "conversador": {
+        "name": "Conversador",
+        "description": "Alcanza 100 mensajes enviados",
+    },
+    "invitador": {
+        "name": "Invitador",
+        "description": "Consigue 5 invitaciones exitosas",
+    },
+}

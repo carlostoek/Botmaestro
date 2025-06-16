@@ -1,12 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime
 
 from aiogram import Bot
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Achievement, UserAchievement, InviteToken, VipSubscription
+from database.models import (
+    Achievement,
+    UserAchievement,
+    InviteToken,
+    VipSubscription,
+    Badge,
+    UserBadge,
+    UserProgress,
+    UserMission,
+)
 
 PREDEFINED_ACHIEVEMENTS = [
     {
@@ -109,3 +117,62 @@ class AchievementService:
         stmt = select(func.count()).select_from(VipSubscription).where(VipSubscription.user_id == user_id)
         count = (await self.session.execute(stmt)).scalar() or 0
         await self._check_and_grant(user_id, "vip", count, bot=bot)
+
+    # ----- Badge related methods -----
+    async def _badge_condition_met(self, user_id: int, badge: Badge) -> bool:
+        progress = await self.session.get(UserProgress, user_id)
+        if not progress:
+            return False
+        if badge.condition_type == "messages":
+            return progress.messages_sent >= badge.condition_value
+        if badge.condition_type == "login_streak":
+            return progress.checkin_streak >= badge.condition_value
+        if badge.condition_type == "missions":
+            stmt = select(func.count()).select_from(UserMission).where(
+                UserMission.user_id == user_id,
+                UserMission.completed == True,
+            )
+            count = (await self.session.execute(stmt)).scalar() or 0
+            return count >= badge.condition_value
+        if badge.condition_type == "invites":
+            stmt = select(func.count()).select_from(InviteToken).where(
+                InviteToken.created_by == user_id,
+                InviteToken.used_by.is_not(None),
+            )
+            count = (await self.session.execute(stmt)).scalar() or 0
+            return count >= badge.condition_value
+        return False
+
+    async def check_user_badges(self, user_id: int) -> list[Badge]:
+        stmt = select(Badge).where(Badge.is_active == True)
+        badges = (await self.session.execute(stmt)).scalars().all()
+        unlockable = []
+        for badge in badges:
+            existing = await self.session.get(UserBadge, {"user_id": user_id, "badge_id": badge.id})
+            if existing:
+                continue
+            if await self._badge_condition_met(user_id, badge):
+                unlockable.append(badge)
+        return unlockable
+
+    async def award_badge(self, user_id: int, badge_id: int) -> bool:
+        badge = await self.session.get(Badge, badge_id)
+        if not badge or not badge.is_active:
+            return False
+        existing = await self.session.get(UserBadge, {"user_id": user_id, "badge_id": badge_id})
+        if existing:
+            return False
+        if not await self._badge_condition_met(user_id, badge):
+            return False
+        self.session.add(UserBadge(user_id=user_id, badge_id=badge_id))
+        await self.session.commit()
+        return True
+
+    async def get_user_badges(self, user_id: int) -> list[Badge]:
+        stmt = (
+            select(Badge)
+            .join(UserBadge, UserBadge.badge_id == Badge.id)
+            .where(UserBadge.user_id == user_id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
