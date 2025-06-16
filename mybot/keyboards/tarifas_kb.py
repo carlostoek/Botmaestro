@@ -24,6 +24,5 @@ def get_plan_list_kb(plans):
     builder = InlineKeyboardBuilder()
     for plan in plans:
         builder.button(text=plan.name, callback_data=f"plan_link_{plan.id}")
-    builder.button(text="🔙 Volver", callback_data="vip_generate_link_back")
     builder.adjust(1)
     return builder.as_markup()

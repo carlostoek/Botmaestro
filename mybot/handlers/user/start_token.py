@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import User
 from services.token_service import TokenService
+from services.subscription_service import SubscriptionService
 from services.achievement_service import AchievementService
 from utils.config import VIP_CHANNEL_ID
 
@@ -38,8 +39,18 @@ async def start_with_token(message: Message, command: CommandObject, session: As
         session.add(user)
 
     user.role = "vip"
-    user.vip_expires_at = datetime.utcnow() + timedelta(days=duration)
+    expires_at = datetime.utcnow() + timedelta(days=duration)
+    user.vip_expires_at = expires_at
     user.last_reminder_sent_at = None
+
+    # Record the subscription for tracking
+    sub_service = SubscriptionService(session)
+    existing = await sub_service.get_subscription(user.id)
+    if existing:
+        existing.expires_at = expires_at
+    else:
+        await sub_service.create_subscription(user.id, expires_at)
+
     await session.commit()
     ach_service = AchievementService(session)
     await ach_service.check_vip_achievement(user.id, bot=bot)
