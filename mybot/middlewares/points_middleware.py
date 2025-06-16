@@ -7,6 +7,7 @@ except ImportError:  # Fallback for older aiogram
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import User
 from services.point_service import PointService
+from utils.messages import BOT_MESSAGES
 import logging
 import datetime
 
@@ -41,7 +42,10 @@ class PointsMiddleware(BaseMiddleware):
                     for ch in completed:
                         await bot.send_message(
                             event.from_user.id,
-                            f"🎯 ¡Desafío {ch.type} completado! +100 puntos",
+                            BOT_MESSAGES["challenge_completed"].format(
+                                challenge_type=ch.type,
+                                points=100,
+                            ),
                         )
             elif isinstance(event, MessageReactionUpdated):
                 user_id = getattr(event, "user", None)
@@ -55,6 +59,7 @@ class PointsMiddleware(BaseMiddleware):
                         session.add(user)
                         await session.commit()
                     await service.award_reaction(user, message_id, bot)
+                    await bot.send_message(user_id, BOT_MESSAGES["reaction_registered"])
                     completed = await mission_service.increment_challenge_progress(
                         user_id,
                         "reactions",
@@ -63,7 +68,10 @@ class PointsMiddleware(BaseMiddleware):
                     for ch in completed:
                         await bot.send_message(
                             user_id,
-                            f"🎯 ¡Desafío {ch.type} completado! +100 puntos",
+                            BOT_MESSAGES["challenge_completed"].format(
+                                challenge_type=ch.type,
+                                points=100,
+                            ),
                         )
             elif isinstance(event, PollAnswer):
                 await service.award_poll(event.user.id, bot)
