@@ -25,7 +25,7 @@ def get_missions_keyboard(missions: list, offset: int = 0):
     keyboard = []
     # Display up to 5 missions per page
     for mission in missions[offset:offset+5]:
-        keyboard.append([InlineKeyboardButton(text=f"{mission.name} ({mission.points_reward} Pts)", callback_data=f"mission_{mission.id}")])
+        keyboard.append([InlineKeyboardButton(text=f"{mission.name} ({mission.reward_points} Pts)", callback_data=f"mission_{mission.id}")])
     
     # Add navigation buttons if there are more missions
     nav_buttons = []

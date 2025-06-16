@@ -7,7 +7,7 @@ from datetime import datetime
 
 from keyboards.vip_kb import get_vip_kb
 from utils.user_roles import is_vip_member
-from utils.keyboard_utils import get_back_keyboard, get_main_menu_keyboard
+from utils.keyboard_utils import get_back_keyboard, get_main_menu_keyboard, get_missions_keyboard
 from utils.messages import BOT_MESSAGES
 from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
@@ -50,10 +50,32 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
 async def vip_missions(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
-    await callback.message.edit_text(
-        "Aquí verás las misiones disponibles para ganar puntos extra. Pronto estarán activas.",
-        reply_markup=get_vip_kb(),
-    )
+    mission_service = MissionService(session)
+    user = await session.get(User, callback.from_user.id)
+    if not user:
+        user = User(
+            id=callback.from_user.id,
+            username=sanitize_text(callback.from_user.username),
+            first_name=sanitize_text(callback.from_user.first_name),
+            last_name=sanitize_text(callback.from_user.last_name),
+        )
+        session.add(user)
+        await session.commit()
+
+    missions = await mission_service.get_daily_missions(user_id=user.id)
+    if missions:
+        lines = []
+        for m in missions:
+            completed, _ = await mission_service.check_mission_completion_status(user, m)
+            status = "¡Completada! ✅" if completed else "No completada"
+            lines.append(
+                f"*{m.name}*\n{m.description}\nRecompensa: {m.reward_points} puntos\nEstado: {status}"
+            )
+        text = "\n\n".join(lines)
+    else:
+        text = "No hay misiones activas por ahora."
+
+    await callback.message.edit_text(text, reply_markup=get_missions_keyboard(missions))
     await callback.answer()
 
 
