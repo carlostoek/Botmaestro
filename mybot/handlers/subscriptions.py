@@ -8,6 +8,7 @@ from services.token_service import validate_token
 from services.subscription_service import SubscriptionService
 from database.models import User
 from utils.config import VIP_CHANNEL_ID as CONFIG_VIP_CHANNEL_ID
+from services.achievement_service import AchievementService
 
 router = Router()
 
@@ -63,6 +64,8 @@ async def activate_vip(message: Message, session: AsyncSession, bot: Bot):
     else:
         await sub_service.create_subscription(user.id, vip_expires_at)
     await session.commit()
+    ach_service = AchievementService(session)
+    await ach_service.check_vip_achievement(user.id, bot=bot)
 
     invite_link = None
     if VIP_CHANNEL_ID:

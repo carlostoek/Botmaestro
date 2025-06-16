@@ -48,6 +48,23 @@ class Reward(AsyncAttrs, Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
 
+
+class Achievement(AsyncAttrs, Base):
+    __tablename__ = "achievements"
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    condition_type = Column(String, nullable=False)
+    condition_value = Column(Integer, nullable=False)
+    reward_text = Column(String, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+
+class UserAchievement(AsyncAttrs, Base):
+    __tablename__ = "user_achievements"
+    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    achievement_id = Column(String, ForeignKey("achievements.id"), primary_key=True)
+    unlocked_at = Column(DateTime, default=func.now())
+
 class Mission(AsyncAttrs, Base):
     __tablename__ = "missions"
     id = Column(String, primary_key=True, unique=True) # e.g., 'daily_login', 'event_trivia_challenge'
@@ -96,6 +113,8 @@ class UserProgress(AsyncAttrs, Base):
     last_activity_at = Column(DateTime, default=func.now())
     last_checkin_at = Column(DateTime, nullable=True)
     last_notified_points = Column(Float, default=0)
+    messages_sent = Column(Integer, default=0)
+    checkin_streak = Column(Integer, default=0)
 
 
 class InviteToken(AsyncAttrs, Base):
