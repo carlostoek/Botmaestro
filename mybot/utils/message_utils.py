@@ -2,6 +2,7 @@
 from database.models import User, Mission, Reward, UserAchievement
 from services.level_service import LevelService
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from services.achievement_service import ACHIEVEMENTS
 from utils.messages import BOT_MESSAGES
 import datetime
