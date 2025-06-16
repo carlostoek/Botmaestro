@@ -20,7 +20,12 @@ from utils.keyboard_utils import (
     get_admin_content_daily_gifts_keyboard,
     get_admin_content_minigames_keyboard,
 )
-from utils.admin_state import AdminUserStates, AdminContentStates, AdminMissionStates
+from utils.admin_state import (
+    AdminUserStates,
+    AdminContentStates,
+    AdminMissionStates,
+    AdminDailyGiftStates,
+)
 from services.mission_service import MissionService
 from database.models import User, Mission
 from services.point_service import PointService
@@ -241,6 +246,18 @@ async def admin_content_missions(callback: CallbackQuery, session: AsyncSession)
         "admin_content_missions",
     )
     await callback.answer()
+
+
+@router.callback_query(F.data == "toggle_daily_gift")
+async def toggle_daily_gift(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    service = ConfigService(session)
+    current = await service.get_value("daily_gift_enabled")
+    new_value = "false" if current == "true" else "true"
+    await service.set_value("daily_gift_enabled", new_value)
+    await callback.answer("Configuración actualizada", show_alert=True)
+    await admin_content_daily_gifts(callback, session)
 
 
 @router.callback_query(F.data == "admin_create_mission")
@@ -475,26 +492,89 @@ async def admin_content_auctions(callback: CallbackQuery, session: AsyncSession)
 async def admin_content_daily_gifts(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
+    config = ConfigService(session)
+    enabled = (await config.get_value("daily_gift_enabled")) != "false"
+    toggle_text = "❌ Desactivar" if enabled else "✅ Activar"
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=toggle_text, callback_data="toggle_daily_gift")],
+            [InlineKeyboardButton(text="🎯 Configurar Regalo del Día", callback_data="admin_configure_daily_gift")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     await update_menu(
         callback,
         "🎁 Regalos Diarios - Selecciona una opción:",
-        get_admin_content_daily_gifts_keyboard(),
+        keyboard,
         session,
         "admin_content_daily_gifts",
     )
-    await callback.answer()
 
 
 @router.callback_query(F.data == "admin_content_minigames")
 async def admin_content_minigames(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
+    config = ConfigService(session)
+    enabled = (await config.get_value("minigames_enabled")) != "false"
+    toggle_text = "❌ Desactivar" if enabled else "✅ Activar"
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=toggle_text, callback_data="toggle_minigames")],
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_manage_content")],
+        ]
+    )
     await update_menu(
         callback,
-        "🕹 Minijuegos - Funcionalidad en desarrollo.",
-        get_admin_content_minigames_keyboard(),
+        "🕹 Minijuegos - Configuración:",
+        keyboard,
         session,
         "admin_content_minigames",
     )
+
+
+@router.callback_query(F.data == "toggle_minigames")
+async def toggle_minigames(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    service = ConfigService(session)
+    current = await service.get_value("minigames_enabled")
+    new_value = "false" if current == "true" else "true"
+    await service.set_value("minigames_enabled", new_value)
+    await callback.answer("Configuración actualizada", show_alert=True)
+    await admin_content_minigames(callback, session)
+
+
+@router.callback_query(F.data == "admin_configure_daily_gift")
+async def configure_daily_gift(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Ingresa la cantidad de puntos para el regalo diario:",
+        reply_markup=get_back_keyboard("admin_content_daily_gifts"),
+    )
+    await state.set_state(AdminDailyGiftStates.waiting_for_amount)
     await callback.answer()
+
+
+@router.message(AdminDailyGiftStates.waiting_for_amount)
+async def save_daily_gift_amount(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        amount = int(message.text)
+    except ValueError:
+        await message.answer("Ingresa un número válido.")
+        return
+    service = ConfigService(session)
+    await service.set_value("daily_gift_points", str(amount))
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_daily_gifts")]
+        ]
+    )
+    await message.answer(
+        "Regalo diario actualizado.", reply_markup=keyboard
+    )
+    await state.clear()
 

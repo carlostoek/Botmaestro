@@ -87,5 +87,12 @@ BOT_MESSAGES = {
     "points_total_notification": "Tienes ahora {total_points} puntos acumulados.",
     "checkin_success": "✅ Check-in registrado. Ganaste {points} puntos.",
     "checkin_already_done": "Ya realizaste tu check-in. Vuelve mañana.",
+    "daily_gift_received": "🎁 Recibiste {points} puntos del regalo diario!",
+    "daily_gift_already": "Ya reclamaste el regalo diario. Vuelve mañana.",
+    "daily_gift_disabled": "Regalos diarios deshabilitados.",
+    "minigames_disabled": "Minijuegos deshabilitados.",
+    "dice_points": "Ganaste {points} puntos lanzando el dado.",
+    "trivia_correct": "¡Correcto! +5 puntos",
+    "trivia_wrong": "Respuesta incorrecta.",
     "unrecognized_command_text": "Comando no reconocido. Aquí está el menú principal:"
 }
