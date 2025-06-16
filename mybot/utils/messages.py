@@ -25,6 +25,7 @@ BOT_MESSAGES = {
     "mission_not_found": "Ese desafío no existe o ya expiró.",
     "mission_already_completed": "Ya lo completaste. Buen trabajo.",
     "mission_completed_success": "✅ ¡Desafío completado! Ganaste `{points_reward}` puntos.",
+    "mission_completed_feedback": "🎉 ¡Misión '{mission_name}' completada! Ganaste `{points_reward}` puntos.",
     "mission_level_up_bonus": "🚀 Subiste de nivel. Ahora estás en el nivel `{user_level}`. Las cosas se pondrán más interesantes.",
     "mission_achievement_unlocked": "\n🏆 Logro desbloqueado: *{achievement_name}*",
     "mission_completion_failed": "❌ No pudimos registrar este desafío. Revisa si ya lo hiciste antes o si aún está activo.",

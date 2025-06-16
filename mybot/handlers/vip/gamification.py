@@ -273,18 +273,17 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
         return
 
     # Intentar completar la misión
-    completed, completed_mission_obj = await mission_service.complete_mission(user_id, mission_id)
+    completed, completed_mission_obj = await mission_service.complete_mission(
+        user_id,
+        mission_id,
+        bot=callback.bot,
+    )
 
     if completed:
-        await point_service.add_points(user_id, completed_mission_obj.reward_points, bot=callback.bot)
-        
         # Opcional: Otorgar un logro por la primera misión
         if not user.missions_completed: # Si es la primera misión del usuario
              await achievement_service.grant_achievement(user_id, "first_mission")
-
-        alert_message = f"🎉 ¡Misión '{completed_mission_obj.name}' completada! Ganaste `{completed_mission_obj.reward_points}` puntos."
-
-        await callback.answer(alert_message, show_alert=True)
+        await callback.answer("Misión completada!", show_alert=True)
 
         # Volver al menú de misiones y actualizarlo
         active_missions = await mission_service.get_active_missions(user_id=user_id) # Volver a obtener las misiones activas
@@ -351,10 +350,14 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
             is_completed_for_period, _ = await mission_service.check_mission_completion_status(user, mission, target_message_id=target_message_id) # Pasa target_message_id
             
             if not is_completed_for_period:
-                completed, mission_obj = await mission_service.complete_mission(user_id, mission.id, target_message_id=target_message_id)
+                completed, mission_obj = await mission_service.complete_mission(
+                    user_id,
+                    mission.id,
+                    target_message_id=target_message_id,
+                    bot=callback.bot,
+                )
                 if completed:
-                    mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**! Ganaste `{mission_obj.reward_points}` puntos adicionales."
-                    await point_service.add_points(user_id, mission_obj.reward_points, bot=callback.bot)
+                    mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**!"
 
     alert_message = f"¡Reacción registrada! Ganaste `{base_points_for_reaction}` puntos."
     alert_message += mission_completed_message
