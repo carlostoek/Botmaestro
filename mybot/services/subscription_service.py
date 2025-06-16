@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from database.models import VipSubscription
+from database.models import VipSubscription, User, Token, Tariff
 
 
 class SubscriptionService:
@@ -65,3 +65,31 @@ class SubscriptionService:
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+
+async def get_admin_statistics(session: AsyncSession) -> dict:
+    """Return statistics for the admin panel."""
+
+    sub_service = SubscriptionService(session)
+    total_subs, active_subs, expired_subs = await sub_service.get_statistics()
+
+    user_count_stmt = select(func.count()).select_from(User)
+    user_count_res = await session.execute(user_count_stmt)
+    total_users = user_count_res.scalar() or 0
+
+    revenue_stmt = (
+        select(func.sum(Tariff.price))
+        .select_from(Token)
+        .join(Tariff, Token.tariff_id == Tariff.id)
+        .where(Token.is_used.is_(True))
+    )
+    revenue_res = await session.execute(revenue_stmt)
+    total_revenue = revenue_res.scalar() or 0
+
+    return {
+        "subscriptions_total": total_subs,
+        "subscriptions_active": active_subs,
+        "subscriptions_expired": expired_subs,
+        "users_total": total_users,
+        "revenue_total": total_revenue,
+    }

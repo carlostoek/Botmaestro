@@ -3,7 +3,7 @@ from .level_service import LevelService
 from .mission_service import MissionService
 from .point_service import PointService
 from .reward_service import RewardService
-from .subscription_service import SubscriptionService
+from .subscription_service import SubscriptionService, get_admin_statistics
 from .token_service import TokenService, validate_token
 from .config_service import ConfigService
 from .plan_service import SubscriptionPlanService
@@ -17,6 +17,7 @@ __all__ = [
     "PointService",
     "RewardService",
     "SubscriptionService",
+    "get_admin_statistics",
     "TokenService",
     "validate_token",
     "ConfigService",
