@@ -13,6 +13,7 @@ from utils.keyboard_utils import (
 )
 from keyboards.common import get_back_kb
 from keyboards.admin_vip_config_kb import get_tariff_select_kb
+from services import get_admin_statistics
 from database.models import Tariff, Token
 from uuid import uuid4
 from sqlalchemy import select
@@ -100,6 +101,33 @@ async def admin_game_test(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     await callback.answer("Bot\u00f3n de prueba presionado", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_stats")
+async def admin_stats(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    stats = await get_admin_statistics(session)
+    text_lines = [
+        "*Estad\u00edsticas del sistema*",
+        f"\n*Usuarios totales:* {stats['users_total']}",
+        f"*Suscripciones totales:* {stats['subscriptions_total']}",
+        f"*Activas:* {stats['subscriptions_active']}",
+        f"*Expiradas:* {stats['subscriptions_expired']}",
+    ]
+    revenue = stats.get("revenue_total")
+    if revenue:
+        text_lines.append(f"*Recaudaci\u00f3n:* {revenue}")
+    else:
+        text_lines.append("*Recaudaci\u00f3n:* No disponible")
+    await update_menu(
+        callback,
+        "\n".join(text_lines),
+        get_back_kb("admin_back"),
+        session,
+        "admin_stats",
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "admin_back")
