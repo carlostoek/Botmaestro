@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from database.models import PendingChannelRequest, BotConfig, User
 from utils.config import VIP_CHANNEL_ID
+from services.config_service import ConfigService
 
 
 async def channel_request_scheduler(bot: Bot, session_factory: async_sessionmaker[AsyncSession]):
@@ -36,6 +37,13 @@ async def vip_subscription_scheduler(bot: Bot, session_factory: async_sessionmak
         async with session_factory() as session:
             now = datetime.utcnow()
             remind_threshold = now + timedelta(hours=24)
+            config_service = ConfigService(session)
+            reminder_msg = await config_service.get_value("vip_reminder_message")
+            farewell_msg = await config_service.get_value("vip_farewell_message")
+            if not reminder_msg:
+                reminder_msg = "Tu suscripción VIP expira pronto."
+            if not farewell_msg:
+                farewell_msg = "Tu suscripción VIP ha expirado."
             stmt = select(User).where(
                 User.role == "vip",
                 User.vip_expires_at <= remind_threshold,
@@ -47,7 +55,7 @@ async def vip_subscription_scheduler(bot: Bot, session_factory: async_sessionmak
             users = result.scalars().all()
             for user in users:
                 try:
-                    await bot.send_message(user.id, "Tu suscripción VIP expira pronto.")
+                    await bot.send_message(user.id, reminder_msg)
                     user.last_reminder_sent_at = now
                 except Exception:
                     pass
@@ -66,6 +74,6 @@ async def vip_subscription_scheduler(bot: Bot, session_factory: async_sessionmak
                 except Exception:
                     pass
                 user.role = "free"
-                await bot.send_message(user.id, "Tu suscripción VIP ha expirado.")
+                await bot.send_message(user.id, farewell_msg)
             await session.commit()
         await asyncio.sleep(3600)

@@ -62,6 +62,13 @@ class AdminConfigStates(StatesGroup):
     waiting_for_reaction_buttons = State()
 
 
+class AdminVipMessageStates(StatesGroup):
+    """States for configuring VIP channel messages."""
+
+    waiting_for_reminder_message = State()
+    waiting_for_farewell_message = State()
+
+
 class AdminMissionStates(StatesGroup):
     """States for creating missions from the admin panel."""
 
