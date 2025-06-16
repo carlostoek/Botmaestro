@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models import InviteToken, SubscriptionToken, Token, Tariff
+from services.achievement_service import AchievementService
 
 
 class TokenService:
@@ -45,6 +46,8 @@ class TokenService:
         obj.used_by = user_id
         obj.used_at = datetime.utcnow()
         await self.session.commit()
+        ach_service = AchievementService(self.session)
+        await ach_service.check_invite_achievements(obj.created_by)
         return True
 
     async def create_subscription_token(self, plan_id: int, created_by: int) -> SubscriptionToken:

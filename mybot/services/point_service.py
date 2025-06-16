@@ -3,6 +3,7 @@ from sqlalchemy import select
 from database.models import User, UserProgress
 from utils.user_roles import get_points_multiplier
 from aiogram import Bot
+from services.achievement_service import AchievementService
 import datetime
 import logging
 
@@ -27,6 +28,10 @@ class PointService:
         if progress.last_activity_at and (now - progress.last_activity_at).total_seconds() < 30:
             return None
         progress = await self.add_points(user_id, 1, bot=bot)
+        progress.messages_sent += 1
+        await self.session.commit()
+        ach_service = AchievementService(self.session)
+        await ach_service.check_message_achievements(user_id, progress.messages_sent, bot=bot)
         return progress
 
     async def award_reaction(
@@ -50,8 +55,14 @@ class PointService:
         if progress.last_checkin_at and (now - progress.last_checkin_at).total_seconds() < 86400:
             return False, progress
         progress = await self.add_points(user_id, 10, bot=bot)
+        if progress.last_checkin_at and (now.date() - progress.last_checkin_at.date()).days == 1:
+            progress.checkin_streak += 1
+        else:
+            progress.checkin_streak = 1
         progress.last_checkin_at = now
         await self.session.commit()
+        ach_service = AchievementService(self.session)
+        await ach_service.check_checkin_achievements(user_id, progress.checkin_streak, bot=bot)
         return True, progress
 
     async def add_points(self, user_id: int, points: float, *, bot: Bot | None = None) -> UserProgress:
