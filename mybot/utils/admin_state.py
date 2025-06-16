@@ -60,6 +60,8 @@ class AdminConfigStates(StatesGroup):
     """States for bot configuration options."""
 
     waiting_for_reaction_buttons = State()
+    waiting_for_channel_interval = State()
+    waiting_for_vip_interval = State()
 
 
 class AdminVipMessageStates(StatesGroup):

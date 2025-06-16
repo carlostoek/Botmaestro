@@ -37,6 +37,12 @@ VIP_CHANNEL_ID = int(os.environ.get("VIP_CHANNEL_ID", "0"))
 # disables handling of free channel join requests.
 FREE_CHANNEL_ID = int(os.environ.get("FREE_CHANNEL_ID", "0"))
 
+# Default scheduler intervals in seconds. These can be overridden via
+# environment variables and further adjusted at runtime using the admin
+# configuration menu.
+CHANNEL_SCHEDULER_INTERVAL = int(os.environ.get("CHANNEL_SCHEDULER_INTERVAL", "30"))
+VIP_SCHEDULER_INTERVAL = int(os.environ.get("VIP_SCHEDULER_INTERVAL", "3600"))
+
 class Config:
     BOT_TOKEN = BOT_TOKEN
     ADMIN_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
@@ -44,3 +50,5 @@ class Config:
     FREE_CHANNEL_ID = FREE_CHANNEL_ID
     VIP_IDS = VIP_IDS
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///gamification.db")
+    CHANNEL_SCHEDULER_INTERVAL = CHANNEL_SCHEDULER_INTERVAL
+    VIP_SCHEDULER_INTERVAL = VIP_SCHEDULER_INTERVAL
