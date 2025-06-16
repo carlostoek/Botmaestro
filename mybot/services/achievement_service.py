@@ -46,6 +46,9 @@ PREDEFINED_ACHIEVEMENTS = [
     },
 ]
 
+# Convenience mapping by ID for easy lookups (used in profile views)
+ACHIEVEMENTS = {a["id"]: a for a in PREDEFINED_ACHIEVEMENTS}
+
 
 class AchievementService:
     def __init__(self, session: AsyncSession):
