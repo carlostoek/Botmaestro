@@ -1,10 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from database.models import Reward, User
+from database.models import Reward, User, UserReward
 from utils.text_utils import sanitize_text
+from utils.messages import BOT_MESSAGES
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class RewardService:
     def __init__(self, session: AsyncSession):
@@ -15,6 +17,20 @@ class RewardService:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_available_rewards(self, user_points: int) -> list[Reward]:
+        stmt = (
+            select(Reward)
+            .where(Reward.is_active == True, Reward.required_points <= user_points)
+            .order_by(Reward.required_points)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_claimed_reward_ids(self, user_id: int) -> list[int]:
+        stmt = select(UserReward.reward_id).where(UserReward.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+
     async def get_reward_by_id(self, reward_id: int) -> Reward | None:
         return await self.session.get(Reward, reward_id)
 
@@ -23,47 +39,51 @@ class RewardService:
         result = await self.session.execute(select(Reward))
         return result.scalars().all()
 
-    async def purchase_reward(self, user_id: int, reward_id: int) -> tuple[bool, str]:
+    async def claim_reward(self, user_id: int, reward_id: int) -> tuple[bool, str]:
+        """Claim a reward once the user has enough points."""
         user = await self.session.get(User, user_id)
         reward = await self.session.get(Reward, reward_id)
-
         if not user:
-            logger.warning(f"Purchase attempt by non-existent user {user_id}.")
-            return False, "Usuario no encontrado. Por favor, inicia con /start."
+            return False, "Usuario no encontrado."
         if not reward or not reward.is_active:
-            logger.warning(f"Purchase attempt for inactive or non-existent reward {reward_id}.")
             return False, "Recompensa no disponible."
-        if reward.stock != -1 and reward.stock <= 0:
-            logger.warning(f"Purchase attempt for out-of-stock reward {reward_id}.")
-            return False, "Recompensa agotada."
-        if user.points < reward.cost:
-            logger.info(f"User {user_id} attempted to buy {reward.name} but has insufficient points ({user.points}/{reward.cost}).")
-            return False, f"No tienes suficientes puntos. Necesitas {reward.cost - user.points} puntos más."
-
-        user.points -= reward.cost
-        if reward.stock != -1:
-            reward.stock -= 1
-
-        # Lógica adicional para entregar la recompensa (ej. notificar al admin, enviar un código, etc.)
-        # For now, just log it. A real system would integrate with an external reward fulfillment.
-        logger.info(f"User {user_id} successfully purchased reward {reward.name} (ID: {reward_id}) for {reward.cost} points.")
-
+        if user.points < reward.required_points:
+            return (
+                False,
+                BOT_MESSAGES.get(
+                    "reward_not_enough_points",
+                    "No tienes suficientes puntos para esta recompensa.",
+                ).format(
+                    required_points=reward.required_points, user_points=int(user.points)
+                ),
+            )
+        stmt = select(UserReward).where(
+            UserReward.user_id == user_id, UserReward.reward_id == reward_id
+        )
+        result = await self.session.execute(stmt)
+        if result.scalar_one_or_none():
+            return False, BOT_MESSAGES.get("reward_already_claimed", "Ya reclamado")
+        self.session.add(UserReward(user_id=user_id, reward_id=reward_id))
         await self.session.commit()
-        await self.session.refresh(user)
-        await self.session.refresh(reward) # Refresh reward to show updated stock
-        return True, "Compra exitosa. ¡Disfruta tu recompensa!"
+        return True, BOT_MESSAGES.get("reward_claim_success", "Recompensa reclamada")
 
-    async def create_reward(self, name: str, description: str, cost: int, stock: int = -1) -> Reward:
+    async def create_reward(
+        self,
+        title: str,
+        description: str,
+        required_points: int,
+        image_url: str | None = None,
+    ) -> Reward:
         new_reward = Reward(
-            name=sanitize_text(name),
+            title=sanitize_text(title),
             description=sanitize_text(description),
-            cost=cost,
-            stock=stock,
+            required_points=required_points,
+            image_url=image_url,
         )
         self.session.add(new_reward)
         await self.session.commit()
         await self.session.refresh(new_reward)
-        logger.info(f"New reward '{name}' created by admin.")
+        logger.info(f"New reward '{title}' created by admin.")
         return new_reward
 
     async def toggle_reward_status(self, reward_id: int, status: bool) -> bool:
@@ -71,7 +91,7 @@ class RewardService:
         if reward:
             reward.is_active = status
             await self.session.commit()
-            logger.info(f"Reward '{reward.name}' status set to {status}.")
+            logger.info(f"Reward '{reward.title}' status set to {status}.")
             return True
         logger.warning(f"Failed to toggle status for reward {reward_id}. Not found.")
         return False

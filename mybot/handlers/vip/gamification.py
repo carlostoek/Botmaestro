@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.types import (
     Message,
     CallbackQuery,
@@ -26,7 +27,6 @@ from utils.keyboard_utils import (
     get_profile_keyboard,
     get_missions_keyboard,
     get_reward_keyboard,
-    get_confirm_purchase_keyboard,
     get_ranking_keyboard,
     get_reaction_keyboard,
     get_root_menu,
@@ -52,6 +52,23 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
+
+# /rewards command
+@router.message(Command("rewards"))
+async def rewards_command(message: Message, session: AsyncSession):
+    user_id = message.from_user.id
+    reward_service = RewardService(session)
+    user = await session.get(User, user_id)
+    user_points = int(user.points) if user else 0
+    available_rewards = await reward_service.get_available_rewards(user_points)
+    claimed = await reward_service.get_claimed_reward_ids(user_id)
+    await set_user_menu_state(session, user_id, "rewards")
+    await message.answer(
+        BOT_MESSAGES["menu_rewards_text"],
+        reply_markup=get_reward_keyboard(available_rewards, set(claimed)),
+    )
+
+
 # Handler para el botón de "Menú Principal" (callback_data)
 @router.callback_query(F.data == "menu_principal")
 async def go_to_main_menu_from_inline(callback: CallbackQuery, session: AsyncSession):
@@ -72,15 +89,18 @@ async def go_to_main_menu_from_inline(callback: CallbackQuery, session: AsyncSes
         )
     await callback.answer()
 
+
 # Handler genérico para callbacks de menú (profile, missions, rewards, ranking, back)
 @router.callback_query(F.data.startswith("menu:"))
 async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
     user_id = callback.from_user.id
-    data = callback.data.split(':')
+    data = callback.data.split(":")
     menu_type = data[1]
 
     current_state = await get_user_menu_state(session, user_id)
-    new_state = current_state # Por defecto, no cambia el estado si no hay una navegación clara
+    new_state = (
+        current_state  # Por defecto, no cambia el estado si no hay una navegación clara
+    )
 
     keyboard = None
     message_text = ""
@@ -111,14 +131,21 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
         new_state = "missions"
     elif menu_type == "rewards":
         reward_service = RewardService(session)
-        active_rewards = await reward_service.get_active_rewards()
+        user = await session.get(User, user_id)
+        user_points = int(user.points) if user else 0
+        available_rewards = await reward_service.get_available_rewards(user_points)
+        claimed = await reward_service.get_claimed_reward_ids(user_id)
         message_text = BOT_MESSAGES["menu_rewards_text"]
-        keyboard = get_reward_keyboard(active_rewards)
+        keyboard = get_reward_keyboard(available_rewards, set(claimed))
         new_state = "rewards"
     elif menu_type == "ranking":
         point_service = PointService(session)
-        top_users = await point_service.get_top_users(limit=10) # Asegúrate de que get_top_users exista
-        message_text = await get_ranking_message(top_users) # Asegúrate de que get_ranking_message exista
+        top_users = await point_service.get_top_users(
+            limit=10
+        )  # Asegúrate de que get_top_users exista
+        message_text = await get_ranking_message(
+            top_users
+        )  # Asegúrate de que get_ranking_message exista
         keyboard = get_ranking_keyboard()
         new_state = "ranking"
     elif menu_type == "back":
@@ -127,9 +154,18 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
         # O si get_parent_menu devuelve algo específico.
         # En este caso, si estamos en un submenú (profile, missions, etc.),
         # queremos volver al menú principal (root).
-        if current_state in ["profile", "missions", "rewards", "ranking", "mission_details", "reward_details"]:
+        if current_state in [
+            "profile",
+            "missions",
+            "rewards",
+            "ranking",
+            "mission_details",
+            "reward_details",
+        ]:
             keyboard = get_main_menu_keyboard()
-            message_text = BOT_MESSAGES["start_welcome_returning_user"] # Mensaje consistente
+            message_text = BOT_MESSAGES[
+                "start_welcome_returning_user"
+            ]  # Mensaje consistente
             new_state = "root"
         else:
             # Si no estamos en un submenú claro para "volver", ir al menú raíz
@@ -165,71 +201,37 @@ async def show_user_level(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
 
 
-# Handler para comprar una recompensa
-@router.callback_query(F.data.startswith("buy_reward_"))
-async def handle_buy_reward_callback(callback: CallbackQuery, session: AsyncSession):
+# Handler para reclamar una recompensa
+@router.callback_query(F.data.startswith("claim_reward_"))
+async def handle_claim_reward_callback(callback: CallbackQuery, session: AsyncSession):
     user_id = callback.from_user.id
-    reward_id = int(callback.data.split('_')[2]) # Extract reward_id from "buy_reward_X"
+    reward_id = int(callback.data.split("_")[-1])
 
     reward_service = RewardService(session)
-    reward = await reward_service.get_reward_by_id(reward_id)
+    success, message = await reward_service.claim_reward(user_id, reward_id)
 
-    if not reward:
-        await callback.answer("Recompensa no encontrada.", show_alert=True)
-        return
-
-    # Mensaje de confirmación antes de la compra
-    confirmation_message = BOT_MESSAGES["confirm_purchase_message"].format(
-        reward_name=reward.name,
-        reward_cost=reward.cost
-    )
-    confirm_keyboard = get_confirm_purchase_keyboard(reward_id)
-    
-    await callback.message.edit_text(confirmation_message, reply_markup=confirm_keyboard)
-    await callback.answer()
-
-# Handler para confirmar la compra de una recompensa
-@router.callback_query(F.data.startswith("confirm_purchase_"))
-async def handle_confirm_purchase_callback(callback: CallbackQuery, session: AsyncSession):
-    user_id = callback.from_user.id
-    reward_id = int(callback.data.split('_')[2])
-
-    reward_service = RewardService(session)
-    success, message = await reward_service.purchase_reward(user_id, reward_id)
+    user = await session.get(User, user_id)
+    user_points = int(user.points) if user else 0
+    available_rewards = await reward_service.get_available_rewards(user_points)
+    claimed = await reward_service.get_claimed_reward_ids(user_id)
 
     if success:
-        # Refrescar la vista de recompensas después de la compra
-        active_rewards = await reward_service.get_active_rewards()
         await callback.message.edit_text(
-            f"✅ {message}\n\n{BOT_MESSAGES['menu_rewards_text']}",
-            reply_markup=get_reward_keyboard(active_rewards)
+            f"✅ {BOT_MESSAGES['reward_claim_success']}\n\n{BOT_MESSAGES['menu_rewards_text']}",
+            reply_markup=get_reward_keyboard(available_rewards, set(claimed)),
         )
+        await callback.answer()
     else:
-        await callback.answer(f"❌ {message}", show_alert=True)
-    await callback.answer() # Siempre responde al callback
-
-
-# Handler para cancelar la compra de una recompensa
-@router.callback_query(F.data.startswith("cancel_purchase_"))
-async def handle_cancel_purchase_callback(callback: CallbackQuery, session: AsyncSession):
-    user_id = callback.from_user.id
-    reward_id = int(callback.data.split('_')[2]) # Si necesitas el reward_id para algo, aunque aquí no sea esencial
-
-    reward_service = RewardService(session)
-    active_rewards = await reward_service.get_active_rewards()
-    
-    await callback.message.edit_text(
-        BOT_MESSAGES["purchase_cancelled_message"], # Mensaje de cancelación
-        reply_markup=get_reward_keyboard(active_rewards)
-    )
-    await callback.answer("Compra cancelada.")
+        await callback.answer(message, show_alert=True)
 
 
 # Handler para ver detalles de una misión
 @router.callback_query(F.data.startswith("mission_"))
-async def handle_mission_details_callback(callback: CallbackQuery, session: AsyncSession):
+async def handle_mission_details_callback(
+    callback: CallbackQuery, session: AsyncSession
+):
     user_id = callback.from_user.id
-    mission_id = callback.data[len("mission_"):]
+    mission_id = callback.data[len("mission_") :]
 
     mission_service = MissionService(session)
     mission = await mission_service.get_mission_by_id(mission_id)
@@ -239,16 +241,33 @@ async def handle_mission_details_callback(callback: CallbackQuery, session: Asyn
         return
 
     mission_details_message = await get_mission_details_message(mission)
-    
+
     # Un teclado específico para la misión, con un botón para completarla si es posible
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Completar Misión", callback_data=f"complete_mission_{mission_id}")],
-        [InlineKeyboardButton(text="⬅️ Volver a Misiones", callback_data="menu:missions")], # Volver al menú de misiones
-        [InlineKeyboardButton(text="🏠 Menú Principal", callback_data="menu_principal")]
-    ])
-    
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Completar Misión",
+                    callback_data=f"complete_mission_{mission_id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Volver a Misiones", callback_data="menu:missions"
+                )
+            ],  # Volver al menú de misiones
+            [
+                InlineKeyboardButton(
+                    text="🏠 Menú Principal", callback_data="menu_principal"
+                )
+            ],
+        ]
+    )
+
     await callback.message.edit_text(mission_details_message, reply_markup=keyboard)
-    await set_user_menu_state(session, user_id, "mission_details") # Establecer el estado para detalles de misión
+    await set_user_menu_state(
+        session, user_id, "mission_details"
+    )  # Establecer el estado para detalles de misión
     await callback.answer()
 
 
@@ -274,9 +293,11 @@ async def handle_missions_pagination(callback: CallbackQuery, session: AsyncSess
 
 # Handler para completar una misión
 @router.callback_query(F.data.startswith("complete_mission_"))
-async def handle_complete_mission_callback(callback: CallbackQuery, session: AsyncSession):
+async def handle_complete_mission_callback(
+    callback: CallbackQuery, session: AsyncSession
+):
     user_id = callback.from_user.id
-    mission_id = callback.data[len("complete_mission_"):]
+    mission_id = callback.data[len("complete_mission_") :]
 
     mission_service = MissionService(session)
     point_service = PointService(session)
@@ -290,9 +311,13 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
         return
 
     # Verificar si la misión ya está completada para el período actual
-    is_completed_for_period, _ = await mission_service.check_mission_completion_status(user, mission)
+    is_completed_for_period, _ = await mission_service.check_mission_completion_status(
+        user, mission
+    )
     if is_completed_for_period:
-        await callback.answer("Ya completaste esta misión. ¡Pronto habrá más!", show_alert=True)
+        await callback.answer(
+            "Ya completaste esta misión. ¡Pronto habrá más!", show_alert=True
+        )
         return
 
     # Intentar completar la misión
@@ -304,29 +329,36 @@ async def handle_complete_mission_callback(callback: CallbackQuery, session: Asy
 
     if completed:
         # Opcional: Otorgar un logro por la primera misión
-        if not user.missions_completed: # Si es la primera misión del usuario
-             await achievement_service.grant_achievement(user_id, "first_mission")
+        if not user.missions_completed:  # Si es la primera misión del usuario
+            await achievement_service.grant_achievement(user_id, "first_mission")
         await callback.answer("Misión completada!", show_alert=True)
 
         # Volver al menú de misiones y actualizarlo
-        active_missions = await mission_service.get_active_missions(user_id=user_id) # Volver a obtener las misiones activas
+        active_missions = await mission_service.get_active_missions(
+            user_id=user_id
+        )  # Volver a obtener las misiones activas
         await callback.message.edit_text(
             BOT_MESSAGES["menu_missions_text"],
-            reply_markup=get_missions_keyboard(active_missions)
+            reply_markup=get_missions_keyboard(active_missions),
         )
-        await set_user_menu_state(session, user_id, "missions") # Volver al estado de misiones
+        await set_user_menu_state(
+            session, user_id, "missions"
+        )  # Volver al estado de misiones
     else:
         # Aquí podrías añadir un mensaje específico si la misión requiere una acción externa
-        await callback.answer("No puedes completar esta misión ahora mismo o requiere una acción externa.", show_alert=True)
+        await callback.answer(
+            "No puedes completar esta misión ahora mismo o requiere una acción externa.",
+            show_alert=True,
+        )
 
 
 # Handler para reacción (like/dislike)
 @router.callback_query(F.data.startswith("reaction_"))
 async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSession):
     user_id = callback.from_user.id
-    parts = callback.data.split('_')
-    reaction_type = parts[1] # 'like' or 'dislike'
-    target_message_id = int(parts[2]) # ID del mensaje al que se reaccionó
+    parts = callback.data.split("_")
+    reaction_type = parts[1]  # 'like' or 'dislike'
+    target_message_id = int(parts[2])  # ID del mensaje al que se reaccionó
 
     # Asume un servicio para manejar reacciones y puntos
     # Puedes crear un ReactionService o integrar esto en PointService/MissionService
@@ -335,11 +367,13 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
     achievement_service = AchievementService(session)
 
     # Puntos base por reacción
-    base_points_for_reaction = 10 if reaction_type == "like" else 5 # Ejemplo
+    base_points_for_reaction = 10 if reaction_type == "like" else 5  # Ejemplo
 
     user = await session.get(User, user_id)
     if not user:
-        await callback.answer("Por favor, inicia con /start antes de reaccionar.", show_alert=True)
+        await callback.answer(
+            "Por favor, inicia con /start antes de reaccionar.", show_alert=True
+        )
         return
 
     # Verificar si el usuario ya reaccionó a este mensaje para evitar spam de puntos
@@ -353,25 +387,42 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
     # Marcar el mensaje como reaccionado por el usuario
     if user.channel_reactions is None:
         user.channel_reactions = {}
-    user.channel_reactions[str(target_message_id)] = True  # Puedes guardar el timestamp si quieres más detalle
-    await session.commit() # Guardar el estado de reacción
+    user.channel_reactions[str(target_message_id)] = (
+        True  # Puedes guardar el timestamp si quieres más detalle
+    )
+    await session.commit()  # Guardar el estado de reacción
 
     # Verificar si hay misiones relacionadas con la reacción
     mission_completed_message = ""
     # Obtener misiones activas que requieran acción
-    active_action_missions = await mission_service.get_active_missions(user_id=user_id, mission_type="reaction") # Asume un tipo 'reaction'
-    
+    active_action_missions = await mission_service.get_active_missions(
+        user_id=user_id, mission_type="reaction"
+    )  # Asume un tipo 'reaction'
+
     for mission in active_action_missions:
         # Aquí la action_data de la misión debería especificar el message_id y/o reaction_type
         # Ejemplo: mission.action_data = {'target_message_id': X, 'reaction_type': 'like'}
-        requires_specific_message = mission.action_data and mission.action_data.get('target_message_id') == target_message_id
-        requires_specific_reaction = mission.action_data and mission.action_data.get('reaction_type') == reaction_type
+        requires_specific_message = (
+            mission.action_data
+            and mission.action_data.get("target_message_id") == target_message_id
+        )
+        requires_specific_reaction = (
+            mission.action_data
+            and mission.action_data.get("reaction_type") == reaction_type
+        )
 
         # Si la misión no requiere una acción específica o si la requiere y coincide
-        if mission.requires_action and (not mission.action_data or (requires_specific_message and requires_specific_reaction)):
+        if mission.requires_action and (
+            not mission.action_data
+            or (requires_specific_message and requires_specific_reaction)
+        ):
             # Check if the user has already completed this mission for the current period
-            is_completed_for_period, _ = await mission_service.check_mission_completion_status(user, mission, target_message_id=target_message_id) # Pasa target_message_id
-            
+            is_completed_for_period, _ = (
+                await mission_service.check_mission_completion_status(
+                    user, mission, target_message_id=target_message_id
+                )
+            )  # Pasa target_message_id
+
             if not is_completed_for_period:
                 completed, mission_obj = await mission_service.complete_mission(
                     user_id,
@@ -380,17 +431,24 @@ async def handle_reaction_callback(callback: CallbackQuery, session: AsyncSessio
                     bot=callback.bot,
                 )
                 if completed:
-                    mission_completed_message = f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**!"
+                    mission_completed_message = (
+                        f"\n\n🎉 ¡Misión completada: **{mission_obj.name}**!"
+                    )
 
-    alert_message = f"¡Reacción registrada! Ganaste `{base_points_for_reaction}` puntos."
+    alert_message = (
+        f"¡Reacción registrada! Ganaste `{base_points_for_reaction}` puntos."
+    )
     alert_message += mission_completed_message
 
-
     await callback.answer(alert_message, show_alert=True)
-    logger.info(f"User {user_id} reacted with {reaction_type} to message {target_message_id}. Points awarded.")
+    logger.info(
+        f"User {user_id} reacted with {reaction_type} to message {target_message_id}. Points awarded."
+    )
+
 
 # --- Handlers para los botones del ReplyKeyboardMarkup ---
 # Estos handlers se activarán cuando el usuario envíe el texto exacto del botón.
+
 
 @router.message(F.text == "👤 Perfil")
 async def show_profile_from_reply_keyboard(message: Message, session: AsyncSession):
@@ -408,21 +466,33 @@ async def show_profile_from_reply_keyboard(message: Message, session: AsyncSessi
     else:
         await message.answer(BOT_MESSAGES["profile_not_registered"])
 
+
 @router.message(F.text == "🗺 Misiones")
 async def show_missions_from_reply_keyboard(message: Message, session: AsyncSession):
     user_id = message.from_user.id
     mission_service = MissionService(session)
     active_missions = await mission_service.get_active_missions(user_id=user_id)
     await set_user_menu_state(session, user_id, "missions")
-    await message.answer(BOT_MESSAGES["menu_missions_text"], reply_markup=get_missions_keyboard(active_missions))
+    await message.answer(
+        BOT_MESSAGES["menu_missions_text"],
+        reply_markup=get_missions_keyboard(active_missions),
+    )
+
 
 @router.message(F.text == "🎁 Recompensas")
 async def show_rewards_from_reply_keyboard(message: Message, session: AsyncSession):
     user_id = message.from_user.id
     reward_service = RewardService(session)
-    active_rewards = await reward_service.get_active_rewards()
+    user = await session.get(User, user_id)
+    user_points = int(user.points) if user else 0
+    available_rewards = await reward_service.get_available_rewards(user_points)
+    claimed = await reward_service.get_claimed_reward_ids(user_id)
     await set_user_menu_state(session, user_id, "rewards")
-    await message.answer(BOT_MESSAGES["menu_rewards_text"], reply_markup=get_reward_keyboard(active_rewards))
+    await message.answer(
+        BOT_MESSAGES["menu_rewards_text"],
+        reply_markup=get_reward_keyboard(available_rewards, set(claimed)),
+    )
+
 
 @router.message(F.text == "🏆 Ranking")
 async def show_ranking_from_reply_keyboard(message: Message, session: AsyncSession):
@@ -453,15 +523,12 @@ async def handle_daily_checkin(message: Message, session: AsyncSession, bot: Bot
             bot=bot,
         )
     if success:
-        await message.answer(
-            BOT_MESSAGES["checkin_success"].format(points=10)
-        )
+        await message.answer(BOT_MESSAGES["checkin_success"].format(points=10))
         for ch in completed_challenges:
-            await message.answer(
-                f"🎯 ¡Desafío {ch.type} completado! +100 puntos"
-            )
+            await message.answer(f"🎯 ¡Desafío {ch.type} completado! +100 puntos")
     else:
         await message.answer(BOT_MESSAGES["checkin_already_done"])
+
 
 # IMPORTANTE: Este handler debe ir AL FINAL de todos los otros F.text handlers,
 # porque si no, podría capturar otros mensajes antes de que sean procesados por handlers más específicos.
@@ -472,16 +539,18 @@ async def handle_unrecognized_text(message: Message, session: AsyncSession):
     # o si quieres redirigirlo siempre al menú principal si envía texto arbitrario.
     user_id = message.from_user.id
     current_state = await get_user_menu_state(session, user_id)
-    
-   # Si el usuario escribe algo que no es un comando o un botón del teclado de respuesta
+
+    # Si el usuario escribe algo que no es un comando o un botón del teclado de respuesta
     # y no está en un estado esperando una entrada específica (como en un FSM State),
     # puedes optar por responder con el menú principal o un mensaje de error.
-    
+
     # Para este ejemplo, simplemente volvemos a enviar el menú principal si no entendemos
     # (y el ReplyKeyboardMarkup ya estará visible).
     await message.answer(
-        BOT_MESSAGES["unrecognized_command_text"], # "Comando no reconocido. Aquí está el menú principal:"
-        reply_markup=get_main_menu_keyboard() # Opcional: mostrar también el inline menu aquí si quieres que se refresque
+        BOT_MESSAGES[
+            "unrecognized_command_text"
+        ],  # "Comando no reconocido. Aquí está el menú principal:"
+        reply_markup=get_main_menu_keyboard(),  # Opcional: mostrar también el inline menu aquí si quieres que se refresque
     )
     # También puedes registrar este evento para depuración:
     logger.warning(f"Unrecognized message from user {user_id}: {message.text}")
