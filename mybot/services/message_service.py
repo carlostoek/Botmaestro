@@ -20,8 +20,13 @@ class MessageService:
         self,
         text: str,
         channel_type: str = "vip",
-    ) -> Message | None:
-        """Send a message with interactive buttons to the configured channel."""
+    ) -> Message | bool | None:
+        """Send a message with interactive buttons to the configured channel.
+
+        Returns the ``Message`` object on success, ``None`` when the channel
+        isn't configured and ``False`` if sending fails due to Telegram
+        errors.
+        """
         config = ConfigService(self.session)
         channel_type = channel_type.lower()
         if channel_type == "vip":
@@ -48,7 +53,7 @@ class MessageService:
             )
             return sent
         except (TelegramBadRequest, TelegramForbiddenError, TelegramAPIError):
-            return None
+            return False
 
     async def register_reaction(
         self, user_id: int, message_id: int, reaction_type: str
