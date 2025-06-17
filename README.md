@@ -43,9 +43,10 @@
 
 ### Customising reaction buttons
 
-The texts shown below channel posts can be changed at runtime. Open the admin
-menu, choose **Configuración** and then **📝 Configurar Reacciones**. Send the
-three button labels separated by `;` (for example: `👍 Me gusta;🔁 Compartir;🔥 Sexy`).
+The emojis shown below channel posts can be changed at runtime. Open the admin
+menu, choose **Configuración** and then **📝 Configurar Reacciones**. The bot
+asks for each reaction emoji individually (up to ten). When finished, press
+**Aceptar** to save the configuration.
 You can also set initial values using the `REACTION_BUTTONS` environment
 variable or by editing the `DEFAULT_REACTION_BUTTONS` list in
 `mybot/utils/config.py`.

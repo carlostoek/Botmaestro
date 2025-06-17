@@ -15,12 +15,9 @@ def get_interactive_post_kb(
     message_id: int, buttons: list[str] | None = None
 ) -> InlineKeyboardMarkup:
     """Keyboard with reaction buttons for channel posts."""
-    texts = (
-        buttons if buttons and len(buttons) >= 3 else DEFAULT_REACTION_BUTTONS
-    )
+    texts = buttons if buttons else DEFAULT_REACTION_BUTTONS
     builder = InlineKeyboardBuilder()
-    builder.button(text=texts[0], callback_data=f"ip_like_{message_id}")
-    builder.button(text=texts[1], callback_data=f"ip_share_{message_id}")
-    builder.button(text=texts[2], callback_data=f"ip_fire_{message_id}")
-    builder.adjust(3)
+    for idx, text in enumerate(texts[:10]):
+        builder.button(text=text, callback_data=f"ip_r{idx}_{message_id}")
+    builder.adjust(len(texts[:10]))
     return builder.as_markup()
