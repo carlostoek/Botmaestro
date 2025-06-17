@@ -70,15 +70,15 @@ class RewardService:
     async def create_reward(
         self,
         title: str,
-        description: str,
         required_points: int,
-        image_url: str | None = None,
+        description: str | None = None,
+        reward_type: str | None = None,
     ) -> Reward:
         new_reward = Reward(
             title=sanitize_text(title),
-            description=sanitize_text(description),
+            description=sanitize_text(description) if description else None,
             required_points=required_points,
-            image_url=image_url,
+            reward_type=reward_type,
         )
         self.session.add(new_reward)
         await self.session.commit()
@@ -95,3 +95,34 @@ class RewardService:
             return True
         logger.warning(f"Failed to toggle status for reward {reward_id}. Not found.")
         return False
+
+    async def update_reward(
+        self,
+        reward_id: int,
+        *,
+        title: str | None = None,
+        required_points: int | None = None,
+        description: str | None = None,
+        reward_type: str | None = None,
+    ) -> bool:
+        reward = await self.session.get(Reward, reward_id)
+        if not reward:
+            return False
+        if title is not None:
+            reward.title = sanitize_text(title)
+        if required_points is not None:
+            reward.required_points = required_points
+        if description is not None:
+            reward.description = sanitize_text(description)
+        if reward_type is not None:
+            reward.reward_type = reward_type
+        await self.session.commit()
+        return True
+
+    async def delete_reward(self, reward_id: int) -> bool:
+        reward = await self.session.get(Reward, reward_id)
+        if not reward:
+            return False
+        await self.session.delete(reward)
+        await self.session.commit()
+        return True

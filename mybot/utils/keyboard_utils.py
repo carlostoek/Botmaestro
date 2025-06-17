@@ -337,14 +337,19 @@ def get_admin_content_rewards_keyboard():
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="Bot\u00f3n de prueba", callback_data="admin_game_test"
-                )
+                InlineKeyboardButton(text="➕ Añadir Recompensa", callback_data="admin_reward_add")
             ],
             [
-                InlineKeyboardButton(
-                    text="🔙 Volver", callback_data="admin_manage_content"
-                )
+                InlineKeyboardButton(text="🗑️ Eliminar Recompensa", callback_data="admin_reward_delete")
+            ],
+            [
+                InlineKeyboardButton(text="📝 Editar Recompensa", callback_data="admin_reward_edit")
+            ],
+            [
+                InlineKeyboardButton(text="📋 Ver Recompensas", callback_data="admin_reward_view")
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Volver", callback_data="admin_manage_content")
             ],
         ]
     )
@@ -474,6 +479,18 @@ def get_back_keyboard(callback_data: str) -> InlineKeyboardMarkup:
     """Return a simple keyboard with a single back button."""
     keyboard = [[InlineKeyboardButton(text="🔙 Volver", callback_data=callback_data)]]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_reward_type_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard to select reward type."""
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🏅 Insignia", callback_data="reward_type_badge")],
+            [InlineKeyboardButton(text="📁 Archivo", callback_data="reward_type_file")],
+            [InlineKeyboardButton(text="🔓 Acceso", callback_data="reward_type_access")],
+        ]
+    )
+    return keyboard
 
 
 def get_mission_completed_keyboard() -> InlineKeyboardMarkup:

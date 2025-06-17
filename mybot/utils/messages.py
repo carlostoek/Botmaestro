@@ -93,10 +93,12 @@ BOT_MESSAGES = {
     "reaction_registered": "👍 ¡Reacción registrada!",
     # --- Administración de Recompensas ---
     "enter_reward_name": "Ingresa el nombre de la recompensa:",
-    "enter_reward_description": "Describe brevemente la recompensa:",
-    "enter_reward_cost": "¿Cuántos puntos costará?",
-    "enter_reward_stock": "¿Cuántas unidades hay disponibles? Escribe -1 para ilimitadas:",
+    "enter_reward_points": "¿Cuántos puntos se requieren?",
+    "enter_reward_description": "Agrega una descripción (opcional):",
+    "select_reward_type": "Selecciona el tipo de recompensa:",
     "reward_created": "✅ Recompensa creada.",
+    "reward_deleted": "❌ Recompensa eliminada.",
+    "reward_updated": "✅ Recompensa actualizada.",
     "invalid_number": "Ingresa un número válido.",
     "user_no_badges": "Aún no has desbloqueado ninguna insignia. ¡Sigue participando!",
 }
