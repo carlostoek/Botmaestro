@@ -9,9 +9,10 @@ from utils.text_utils import sanitize_text
 from keyboards.admin_main_kb import get_admin_main_kb
 from keyboards.subscription_kb import get_subscription_kb
 from utils.user_roles import is_admin, is_vip_member
-from utils.keyboard_utils import get_main_menu_keyboard
+from keyboards.vip_main_kb import get_vip_main_kb
 from utils.messages import BOT_MESSAGES
 from utils.menu_utils import send_menu, send_clean_message
+from services.subscription_service import SubscriptionService
 
 router = Router()
 
@@ -42,10 +43,13 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
             "admin_main",
         )
     elif await is_vip_member(bot, user_id, session=session):
+        sub_service = SubscriptionService(session)
+        sub = await sub_service.get_subscription(user_id)
+        status = "Activa" if sub else "Sin registro"
         await send_clean_message(
             message,
-            BOT_MESSAGES["start_welcome_returning_user"],
-            reply_markup=get_main_menu_keyboard(),
+            f"Suscripción VIP: {status}",
+            reply_markup=get_vip_main_kb(),
         )
     else:
         await send_clean_message(
