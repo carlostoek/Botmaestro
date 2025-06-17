@@ -7,6 +7,7 @@ from utils.messages import BOT_MESSAGES
 def get_main_menu_keyboard():
     """Returns the main inline menu keyboard."""
     keyboard = [
+        [InlineKeyboardButton(text="📈 Ver mi nivel", callback_data="view_level")],
         [InlineKeyboardButton(text="👤 Perfil", callback_data="menu:profile")],
         [InlineKeyboardButton(text="🗺 Misiones", callback_data="menu:missions")],
         [InlineKeyboardButton(text="🎁 Recompensas", callback_data="menu:rewards")],
