@@ -36,7 +36,6 @@ from services.point_service import PointService
 from services.config_service import ConfigService
 from services.badge_service import BadgeService
 from services.message_service import MessageService
-from utils.config import VIP_CHANNEL_ID
 from utils.messages import BOT_MESSAGES
 
 router = Router()
@@ -206,7 +205,7 @@ async def admin_send_channel_post(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     await callback.message.answer(
-        "Envía el texto que deseas publicar en el canal:",
+        "Reenvía o escribe el mensaje que deseas publicar en el canal:",
         reply_markup=get_back_keyboard("admin_manage_content"),
     )
     await state.set_state(AdminContentStates.waiting_for_channel_post_text)
@@ -217,15 +216,32 @@ async def admin_send_channel_post(callback: CallbackQuery, state: FSMContext):
 async def process_channel_post(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
     if not is_admin(message.from_user.id):
         return
-    service = MessageService(session, bot)
-    sent = await service.send_interactive_post(message.text, "vip")
-    if not sent:
+    if message.content_type not in {"text", "photo", "video", "animation", "document", "audio", "voice"}:
+        await send_temporary_reply(message, "Formato de mensaje no soportado.")
+        return
+
+    config_service = ConfigService(session)
+    channel_id = await config_service.get_vip_channel_id() or await config_service.get_free_channel_id()
+    if not channel_id:
         await message.answer(
-            "Canal VIP no configurado.", reply_markup=get_admin_manage_content_keyboard()
+            "\u26A0\uFE0F No channel is currently registered. Please configure it first.",
+            reply_markup=get_admin_manage_content_keyboard(),
         )
-    else:
+        await state.clear()
+        return
+
+    try:
+        if message.content_type == "text":
+            await bot.send_message(channel_id, message.text, entities=message.entities)
+        else:
+            await bot.copy_message(chat_id=channel_id, from_chat_id=message.chat.id, message_id=message.message_id)
         await message.answer(
-            f"Mensaje publicado con ID {sent.message_id}",
+            "\u2705 Message sent to channel!",
+            reply_markup=get_admin_manage_content_keyboard(),
+        )
+    except Exception:
+        await message.answer(
+            "No se pudo enviar el mensaje.",
             reply_markup=get_admin_manage_content_keyboard(),
         )
     await state.clear()
