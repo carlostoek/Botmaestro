@@ -20,13 +20,6 @@ ADMIN_IDS: List[int] = [
     int(uid) for uid in os.environ.get("ADMIN_IDS", "").split(";") if uid.strip()
 ]
 
-# Telegram user IDs with a VIP subscription. This is helpful for
-# testing without relying on channel membership. The IDs should be
-# provided through the ``VIP_IDS`` environment variable separated by
-# semicolons.
-VIP_IDS: List[int] = [
-    int(uid) for uid in os.environ.get("VIP_IDS", "").split(";") if uid.strip()
-]
 
 # Identifier of the VIP channel where subscribers are checked. This
 # must be set via the ``VIP_CHANNEL_ID`` environment variable. A value
@@ -52,7 +45,6 @@ class Config:
     ADMIN_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
     CHANNEL_ID = VIP_CHANNEL_ID
     FREE_CHANNEL_ID = FREE_CHANNEL_ID
-    VIP_IDS = VIP_IDS
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///gamification.db")
     CHANNEL_SCHEDULER_INTERVAL = CHANNEL_SCHEDULER_INTERVAL
     VIP_SCHEDULER_INTERVAL = VIP_SCHEDULER_INTERVAL
