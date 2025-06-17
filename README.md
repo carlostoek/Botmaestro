@@ -16,7 +16,6 @@
    export ADMIN_IDS="11111;22222"          # user IDs with admin privileges
    export VIP_CHANNEL_ID="-100123456789"   # ID of the VIP Telegram channel
    export FREE_CHANNEL_ID="-100987654321"  # ID of the free Telegram channel
-   export VIP_IDS="33333;44444"           # optional list of VIP user IDs
    export DATABASE_URL="sqlite+aiosqlite:///gamification.db"  # DB connection
    export VIP_POINTS_MULTIPLIER="2"       # points multiplier for VIP members
    export CHANNEL_SCHEDULER_INTERVAL="30" # seconds between channel checks
@@ -34,7 +33,6 @@
 | `ADMIN_IDS` | Semicolon separated list of Telegram user IDs that act as administrators |
 | `VIP_CHANNEL_ID` | ID of the VIP Telegram channel. Users here are considered VIP |
 | `FREE_CHANNEL_ID` | ID of the free access channel for non‑VIP users |
-| `VIP_IDS` | Extra user IDs treated as VIP regardless of channel membership |
 | `DATABASE_URL` | SQLAlchemy database URL. Defaults to `sqlite+aiosqlite:///gamification.db` |
 | `VIP_POINTS_MULTIPLIER` | Points multiplier applied when a VIP user earns points |
 | `CHANNEL_SCHEDULER_INTERVAL` | Seconds between checks for channel requests. Defaults to `30` |
@@ -70,9 +68,8 @@ The bot distinguishes between three roles:
 
 * **Admins** – IDs listed in `ADMIN_IDS` can manage channels and bot
   configuration using the admin menu.
-* **VIP users** – users recognised as VIP either by membership of the VIP
-  channel or by IDs in `VIP_IDS`. VIPs get access to the full game, missions
-  and rewards.
+* **VIP users** – users recognised as VIP by their membership of the VIP
+  channel. VIPs get access to the full game, missions and rewards.
 * **Free users** – anyone else interacting with the bot. They can request
   access to the free channel and have a simplified game experience.
 
