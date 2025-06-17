@@ -18,10 +18,12 @@ from services import (
     ConfigService,
     TokenService,
     get_admin_statistics,
+    BadgeService,
+    AchievementService,
 )
 from database.models import User
 from utils.text_utils import sanitize_text
-from utils.admin_state import AdminVipMessageStates
+from utils.admin_state import AdminVipMessageStates, AdminManualBadgeStates
 from aiogram.fsm.context import FSMContext
 from database.models import Tariff
 from utils.menu_utils import update_menu
@@ -122,6 +124,74 @@ async def vip_stats(callback: CallbackQuery, session: AsyncSession):
     )
     await set_user_menu_state(session, callback.from_user.id, "admin_vip")
     await callback.answer()
+
+
+@router.callback_query(F.data == "vip_manual_badge")
+async def vip_manual_badge(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Ingresa el ID o username del usuario:",
+        reply_markup=get_back_keyboard("admin_vip"),
+    )
+    await state.set_state(AdminManualBadgeStates.waiting_for_user)
+    await callback.answer()
+
+
+@router.message(AdminManualBadgeStates.waiting_for_user, F.text)
+async def process_manual_badge_user(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    query = message.text.strip()
+    user = None
+    if query.isdigit():
+        user = await session.get(User, int(query))
+    else:
+        username = query.lstrip("@")
+        stmt = select(User).where(User.username.ilike(username))
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+    if not user:
+        await message.answer("Usuario no encontrado. Intenta nuevamente:")
+        return
+    await state.update_data(target_user=user.id)
+    badges = await BadgeService(session).list_badges()
+    if not badges:
+        await message.answer("No hay insignias disponibles.", reply_markup=get_back_keyboard("admin_vip"))
+        await state.clear()
+        return
+    builder = InlineKeyboardBuilder()
+    for b in badges:
+        label = f"{b.emoji or ''} {b.name}".strip()
+        builder.button(text=label, callback_data=f"manual_badge_{b.id}")
+    builder.button(text="🔙 Volver", callback_data="admin_vip")
+    builder.adjust(1)
+    await message.answer("Selecciona la insignia a otorgar:", reply_markup=builder.as_markup())
+    await state.set_state(AdminManualBadgeStates.waiting_for_badge)
+
+
+@router.callback_query(F.data.startswith("manual_badge_"))
+async def assign_manual_badge(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    data = await state.get_data()
+    user_id = data.get("target_user")
+    if not user_id:
+        await callback.answer("Usuario no especificado", show_alert=True)
+        return
+    badge_id = int(callback.data.split("_")[-1])
+    ach_service = AchievementService(session)
+    success = await ach_service.award_badge(user_id, badge_id, force=True)
+    if success:
+        await callback.answer("Insignia otorgada", show_alert=True)
+        try:
+            await bot.send_message(user_id, "🏅 ¡Has recibido una nueva insignia!")
+        except Exception:
+            pass
+    else:
+        await callback.answer("No se pudo otorgar la insignia", show_alert=True)
+    await state.clear()
+    await update_menu(callback, "El Diván", get_admin_vip_kb(), session, "admin_vip")
 
 
 @router.callback_query(F.data.startswith("vip_manage"))
