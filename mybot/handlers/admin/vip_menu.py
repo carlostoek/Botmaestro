@@ -11,7 +11,11 @@ from keyboards.admin_vip_config_kb import (
     get_tariff_select_kb,
     get_vip_messages_kb,
 )
-from utils.keyboard_utils import get_back_keyboard, get_main_menu_keyboard
+from utils.keyboard_utils import (
+    get_back_keyboard,
+    get_main_menu_keyboard,
+    get_post_confirmation_keyboard,
+)
 from services import (
     SubscriptionService,
     ConfigService,
@@ -223,27 +227,47 @@ async def vip_send_channel_post(callback: CallbackQuery, state: FSMContext):
 async def process_vip_channel_post(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
     if not is_admin(message.from_user.id):
         return
+    await state.update_data(post_text=message.text)
+    await send_clean_message(
+        message,
+        f"Previsualización:\n{message.text}\n\n¿Deseas publicarlo?",
+        reply_markup=get_post_confirmation_keyboard(),
+    )
+    await state.set_state(AdminContentStates.confirming_channel_post)
+
+
+@router.callback_query(AdminContentStates.confirming_channel_post, F.data == "confirm_channel_post")
+async def confirm_vip_channel_post(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    data = await state.get_data()
+    text = data.get("post_text")
     service = MessageService(session, bot)
-    sent = await service.send_interactive_post(message.text, "vip")
+    sent = await service.send_interactive_post(text, "vip")
     if sent is None:
-        await send_clean_message(
-            message,
-            "Canal VIP no configurado.",
-            reply_markup=get_admin_vip_kb(),
-        )
+        reply = "Canal VIP no configurado."
     elif sent is False:
-        await send_clean_message(
-            message,
-            "No se pudo publicar en el canal. Revisa los permisos del bot.",
-            reply_markup=get_admin_vip_kb(),
-        )
+        reply = "No se pudo publicar en el canal. Revisa los permisos del bot."
     else:
-        await send_clean_message(
-            message,
-            f"Mensaje publicado con ID {sent.message_id}",
-            reply_markup=get_admin_vip_kb(),
-        )
+        reply = f"Mensaje publicado con ID {sent.message_id}"
+    await callback.message.edit_text(reply, reply_markup=get_admin_vip_kb())
     await state.clear()
+    await callback.answer()
+
+
+@router.callback_query(AdminContentStates.confirming_channel_post, F.data == "admin_vip")
+async def cancel_vip_channel_post(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await state.clear()
+    await update_menu(
+        callback,
+        "El Diván",
+        get_admin_vip_kb(),
+        session,
+        "admin_vip",
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("vip_manage"))
