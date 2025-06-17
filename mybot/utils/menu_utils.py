@@ -3,10 +3,19 @@ from aiogram.exceptions import TelegramBadRequest
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import set_user_menu_state
-from utils.user_roles import is_admin, is_vip_member
+from utils.user_roles import get_user_role
 from keyboards.admin_main_kb import get_admin_main_kb
 from keyboards.vip_main_kb import get_vip_main_kb
 from keyboards.subscription_kb import get_subscription_kb
+
+
+def _menu_details(role: str):
+    """Return (text, keyboard, state) for the given role."""
+    if role == "admin":
+        return "Panel de Administración", get_admin_main_kb(), "admin_main"
+    if role == "vip":
+        return "Bienvenido al Diván de Diana", get_vip_main_kb(), "vip_main"
+    return "Bienvenido a los Kinkys", get_subscription_kb(), "free_main"
 
 # Cache to store the latest menu message for each user
 MENU_CACHE: dict[int, tuple[int, int]] = {}
@@ -124,30 +133,6 @@ async def send_clean_message(
 
 async def send_role_menu(message: Message, session: AsyncSession) -> None:
     """Display the appropriate main menu based on the user's role."""
-    user_id = message.from_user.id
-    bot = message.bot
-
-    if is_admin(user_id):
-        await send_menu(
-            message,
-            "Panel de Administración",
-            get_admin_main_kb(),
-            session,
-            "admin_main",
-        )
-    elif await is_vip_member(bot, user_id, session=session):
-        await send_menu(
-            message,
-            "Bienvenido al Diván de Diana",
-            get_vip_main_kb(),
-            session,
-            "vip_main",
-        )
-    else:
-        await send_menu(
-            message,
-            "Bienvenido a los Kinkys",
-            get_subscription_kb(),
-            session,
-            "free_main",
-        )
+    role = await get_user_role(message.bot, message.from_user.id, session=session)
+    text, kb, state = _menu_details(role)
+    await send_menu(message, text, kb, session, state)

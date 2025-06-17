@@ -6,7 +6,7 @@ from aiogram.filters import Command
 
 from datetime import datetime
 
-from utils.user_roles import is_vip_member
+from utils.user_roles import get_user_role
 from utils.menu_utils import send_menu, update_menu, send_temporary_reply
 from utils.keyboard_utils import (
     get_back_keyboard,
@@ -28,7 +28,7 @@ router = Router()
 
 @router.message(Command("vip_menu"))
 async def vip_menu(message: Message, session: AsyncSession):
-    if not await is_vip_member(message.bot, message.from_user.id, session=session):
+    if await get_user_role(message.bot, message.from_user.id, session=session) != "vip":
         await send_temporary_reply(
             message,
             BOT_MESSAGES.get(
@@ -49,7 +49,7 @@ async def vip_menu(message: Message, session: AsyncSession):
 @router.callback_query(F.data == "vip_menu")
 async def vip_menu_cb(callback: CallbackQuery, session: AsyncSession):
     """Return to the VIP main menu from callbacks."""
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
@@ -70,7 +70,7 @@ async def vip_menu_cb(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "vip_subscription")
 async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
@@ -105,7 +105,7 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "vip_missions")
 async def vip_missions(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
@@ -136,7 +136,7 @@ async def vip_missions(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "vip_badges")
 async def vip_badges(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
@@ -179,7 +179,7 @@ async def vip_badges(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "vip_game")
 async def vip_game(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
@@ -198,7 +198,7 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "game_profile")
 async def game_profile(callback: CallbackQuery, session: AsyncSession):
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
@@ -241,7 +241,7 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "gain_points")
 async def gain_points(callback: CallbackQuery, session: AsyncSession):
     """Show information on how to earn points in the game."""
-    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+    if await get_user_role(callback.bot, callback.from_user.id, session=session) != "vip":
         await callback.answer(
             BOT_MESSAGES.get(
                 "vip_members_only",
