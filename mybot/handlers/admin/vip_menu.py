@@ -11,8 +11,7 @@ from keyboards.admin_vip_config_kb import (
     get_tariff_select_kb,
     get_vip_messages_kb,
 )
-from keyboards.vip_kb import get_vip_kb
-from utils.keyboard_utils import get_back_keyboard
+from utils.keyboard_utils import get_back_keyboard, get_main_menu_keyboard
 from services import (
     SubscriptionService,
     ConfigService,
@@ -387,7 +386,7 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
     await callback.message.edit_text(
-        "Accede al Juego del Diván", reply_markup=get_vip_kb()
+        "Accede al Juego del Diván", reply_markup=get_main_menu_keyboard()
     )
     await callback.answer()
 
