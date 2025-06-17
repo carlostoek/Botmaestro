@@ -43,8 +43,9 @@ from utils.message_utils import (
 )
 from utils.messages import BOT_MESSAGES, NIVEL_TEMPLATE
 from services.level_service import get_next_level_info
-from utils.user_roles import is_admin
+from utils.user_roles import is_admin, is_vip_member
 from keyboards.admin_main_kb import get_admin_main_kb
+from keyboards.subscription_kb import get_subscription_kb
 from utils.menu_utils import update_menu
 import logging
 
@@ -533,24 +534,24 @@ async def handle_daily_checkin(message: Message, session: AsyncSession, bot: Bot
 # IMPORTANTE: Este handler debe ir AL FINAL de todos los otros F.text handlers,
 # porque si no, podría capturar otros mensajes antes de que sean procesados por handlers más específicos.
 @router.message(F.text)
-async def handle_unrecognized_text(message: Message, session: AsyncSession):
-    # Este handler captura cualquier mensaje de texto que no haya sido manejado por otro handler.
-    # Es útil para guiar al usuario si escribe algo que el bot no entiende,
-    # o si quieres redirigirlo siempre al menú principal si envía texto arbitrario.
+async def handle_unrecognized_text(message: Message, session: AsyncSession, bot: Bot):
+    """Handle arbitrary text depending on the user's role."""
     user_id = message.from_user.id
-    current_state = await get_user_menu_state(session, user_id)
 
-    # Si el usuario escribe algo que no es un comando o un botón del teclado de respuesta
-    # y no está en un estado esperando una entrada específica (como en un FSM State),
-    # puedes optar por responder con el menú principal o un mensaje de error.
+    if is_admin(user_id):
+        await message.answer(
+            BOT_MESSAGES["unrecognized_command_text"],
+            reply_markup=get_admin_main_kb(),
+        )
+    elif await is_vip_member(bot, user_id, session=session):
+        await message.answer(
+            BOT_MESSAGES["unrecognized_command_text"],
+            reply_markup=get_main_menu_keyboard(),
+        )
+    else:
+        await message.answer(
+            "Bienvenido a los kinkys",
+            reply_markup=get_subscription_kb(),
+        )
 
-    # Para este ejemplo, simplemente volvemos a enviar el menú principal si no entendemos
-    # (y el ReplyKeyboardMarkup ya estará visible).
-    await message.answer(
-        BOT_MESSAGES[
-            "unrecognized_command_text"
-        ],  # "Comando no reconocido. Aquí está el menú principal:"
-        reply_markup=get_main_menu_keyboard(),  # Opcional: mostrar también el inline menu aquí si quieres que se refresque
-    )
-    # También puedes registrar este evento para depuración:
     logger.warning(f"Unrecognized message from user {user_id}: {message.text}")
