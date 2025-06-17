@@ -17,7 +17,7 @@ async def subscription_menu(message: Message):
     if is_admin(message.from_user.id) or await is_vip(message.bot, message.from_user.id):
         return
     await message.answer(
-        "Menú para usuarios del canal free",
+        "Bienvenido a los kinkys",
         reply_markup=get_subscription_kb(),
     )
 

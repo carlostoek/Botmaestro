@@ -54,6 +54,6 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
     else:
         await send_clean_message(
             message,
-            "Bienvenido al canal free!",
+            "Bienvenido a los kinkys",
             reply_markup=get_subscription_kb(),
         )
