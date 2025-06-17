@@ -2,8 +2,13 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 from .config import ADMIN_IDS, VIP_CHANNEL_ID
 import os
+import time
+from typing import Dict, Tuple
 
 DEFAULT_VIP_MULTIPLIER = int(os.environ.get("VIP_POINTS_MULTIPLIER", "2"))
+
+# Cache user roles for a short time to avoid repeated API calls
+_ROLE_CACHE: Dict[int, Tuple[str, float]] = {}
 
 
 def is_admin(user_id: int) -> bool:
@@ -44,3 +49,23 @@ async def get_points_multiplier(bot: Bot, user_id: int, session: AsyncSession | 
 
 # Backwards compatibility
 is_vip = is_vip_member
+
+
+async def get_user_role(
+    bot: Bot, user_id: int, session: AsyncSession | None = None
+) -> str:
+    """Return the role for the given user (admin, vip or free)."""
+    now = time.time()
+    cached = _ROLE_CACHE.get(user_id)
+    if cached and now < cached[1]:
+        return cached[0]
+
+    if is_admin(user_id):
+        role = "admin"
+    elif await is_vip_member(bot, user_id, session=session):
+        role = "vip"
+    else:
+        role = "free"
+
+    _ROLE_CACHE[user_id] = (role, now + 600)  # cache for 10 minutes
+    return role
