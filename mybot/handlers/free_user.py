@@ -18,9 +18,14 @@ async def subscription_menu(message: Message):
     )
 
 
-@router.callback_query(F.data == "free_button")
-async def request_access(callback: CallbackQuery):
-    await callback.answer("Acceso solicitado", show_alert=True)
+@router.callback_query(F.data == "free_info")
+async def show_info(callback: CallbackQuery):
+    """Provide basic information to free users."""
+    await callback.answer()
+    await callback.message.edit_text(
+        "Información sobre el canal y sus beneficios.",
+        reply_markup=get_subscription_kb(),
+    )
 
 
 @router.callback_query(F.data == "free_game")

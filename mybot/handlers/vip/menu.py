@@ -6,9 +6,13 @@ from aiogram.filters import Command
 
 from datetime import datetime
 
-from keyboards.vip_kb import get_vip_kb
 from utils.user_roles import is_vip_member
-from utils.keyboard_utils import get_back_keyboard, get_main_menu_keyboard, get_missions_keyboard
+from utils.keyboard_utils import (
+    get_back_keyboard,
+    get_main_menu_keyboard,
+    get_missions_keyboard,
+)
+from keyboards.vip_main_kb import get_vip_main_kb
 from utils.messages import BOT_MESSAGES
 from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
@@ -28,7 +32,7 @@ async def vip_menu(message: Message, session: AsyncSession):
     sub = await sub_service.get_subscription(message.from_user.id)
     status = "Activa" if sub else "Sin registro"
     await message.answer(
-        f"Suscripción VIP: {status}", reply_markup=get_vip_kb()
+        f"Suscripción VIP: {status}", reply_markup=get_vip_main_kb()
     )
 
 
@@ -40,11 +44,18 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
     sub = await sub_service.get_subscription(callback.from_user.id)
     if not sub:
         text = "No registrada"
-    elif sub.expires_at:
-        text = f"Válida hasta {sub.expires_at:%d/%m/%Y}"
     else:
-        text = "Válida sin fecha de expiración"
-    await callback.message.edit_text(text, reply_markup=get_vip_kb())
+        join_date = sub.created_at.strftime("%d/%m/%Y") if sub.created_at else "?"
+        if sub.expires_at:
+            days_left = (sub.expires_at - datetime.utcnow()).days
+            text = (
+                f"Suscripción activa desde {join_date}.\n"
+                f"Días restantes: {days_left}"
+            )
+        else:
+            text = f"Suscripción activa desde {join_date}.\nSin fecha de expiración"
+
+    await callback.message.edit_text(text, reply_markup=get_vip_main_kb())
     await callback.answer()
 
 
@@ -104,7 +115,7 @@ async def vip_badges(callback: CallbackQuery, session: AsyncSession):
             lines.append(line)
         text = "\n".join(lines)
 
-    await callback.message.edit_text(text, reply_markup=get_vip_kb())
+    await callback.message.edit_text(text, reply_markup=get_main_menu_keyboard())
     await callback.answer()
 
 
