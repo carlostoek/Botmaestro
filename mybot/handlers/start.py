@@ -11,7 +11,7 @@ from keyboards.subscription_kb import get_subscription_kb
 from utils.user_roles import is_admin, is_vip_member
 from utils.keyboard_utils import get_main_menu_keyboard
 from utils.messages import BOT_MESSAGES
-from utils.menu_utils import send_menu
+from utils.menu_utils import send_menu, send_clean_message
 
 router = Router()
 
@@ -42,12 +42,14 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot):
             "admin_main",
         )
     elif await is_vip_member(bot, user_id, session=session):
-        await message.answer(
+        await send_clean_message(
+            message,
             BOT_MESSAGES["start_welcome_returning_user"],
             reply_markup=get_main_menu_keyboard(),
         )
     else:
-        await message.answer(
+        await send_clean_message(
+            message,
             "Bienvenido al canal free!",
             reply_markup=get_subscription_kb(),
         )

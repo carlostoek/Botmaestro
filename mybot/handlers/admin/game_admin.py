@@ -23,7 +23,6 @@ from utils.keyboard_utils import (
 )
 from utils.admin_state import (
     AdminUserStates,
-    AdminContentStates,
     AdminMissionStates,
     AdminBadgeStates,
     AdminDailyGiftStates,
@@ -35,7 +34,6 @@ from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
 from services.badge_service import BadgeService
-from services.message_service import MessageService
 from utils.config import VIP_CHANNEL_ID
 from utils.messages import BOT_MESSAGES
 
@@ -201,34 +199,6 @@ async def process_search_user(message: Message, state: FSMContext, session: Asyn
     await state.clear()
 
 
-@router.callback_query(F.data == "admin_send_channel_post")
-async def admin_send_channel_post(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        return await callback.answer()
-    await callback.message.answer(
-        "Envía el texto que deseas publicar en el canal:",
-        reply_markup=get_back_keyboard("admin_manage_content"),
-    )
-    await state.set_state(AdminContentStates.waiting_for_channel_post_text)
-    await callback.answer()
-
-
-@router.message(AdminContentStates.waiting_for_channel_post_text)
-async def process_channel_post(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    if not is_admin(message.from_user.id):
-        return
-    service = MessageService(session, bot)
-    sent = await service.send_interactive_post(message.text, "vip")
-    if not sent:
-        await message.answer(
-            "Canal VIP no configurado.", reply_markup=get_admin_manage_content_keyboard()
-        )
-    else:
-        await message.answer(
-            f"Mensaje publicado con ID {sent.message_id}",
-            reply_markup=get_admin_manage_content_keyboard(),
-        )
-    await state.clear()
 
 
 @router.callback_query(F.data == "admin_content_missions")
