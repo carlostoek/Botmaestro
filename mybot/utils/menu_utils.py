@@ -3,7 +3,12 @@ from aiogram.exceptions import TelegramBadRequest
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import set_user_menu_state
-from utils.user_roles import is_admin, is_vip_member
+from utils.user_roles import (
+    ADMIN_ROLE,
+    VIP_ROLE,
+    FREE_ROLE,
+    get_user_role,
+)
 from keyboards.admin_main_kb import get_admin_main_kb
 from keyboards.vip_main_kb import get_vip_main_kb
 from keyboards.subscription_kb import get_subscription_kb
@@ -127,27 +132,19 @@ async def send_role_menu(message: Message, session: AsyncSession) -> None:
     user_id = message.from_user.id
     bot = message.bot
 
-    if is_admin(user_id):
-        await send_menu(
-            message,
-            "Panel de Administración",
-            get_admin_main_kb(),
-            session,
-            "admin_main",
-        )
-    elif await is_vip_member(bot, user_id, session=session):
-        await send_menu(
-            message,
-            "Bienvenido al Diván de Diana",
-            get_vip_main_kb(),
-            session,
-            "vip_main",
-        )
-    else:
-        await send_menu(
-            message,
-            "Bienvenido a los Kinkys",
-            get_subscription_kb(),
-            session,
-            "free_main",
-        )
+    role = await get_user_role(bot, user_id, session=session)
+
+    if role == ADMIN_ROLE:
+        text = "Panel de Administración"
+        markup = get_admin_main_kb()
+        state = "admin_main"
+    elif role == VIP_ROLE:
+        text = "Bienvenido al Diván de Diana"
+        markup = get_vip_main_kb()
+        state = "vip_main"
+    else:  # FREE_ROLE
+        text = "Bienvenido a los Kinkys"
+        markup = get_subscription_kb()
+        state = "free_main"
+
+    await send_menu(message, text, markup, session, state)

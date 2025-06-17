@@ -3,6 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import ADMIN_IDS, VIP_CHANNEL_ID
 import os
 
+# Constants for role identifiers
+ADMIN_ROLE = "admin"
+VIP_ROLE = "vip"
+FREE_ROLE = "Usuario Free"
+
 DEFAULT_VIP_MULTIPLIER = int(os.environ.get("VIP_POINTS_MULTIPLIER", "2"))
 
 
@@ -40,6 +45,17 @@ async def get_points_multiplier(bot: Bot, user_id: int, session: AsyncSession | 
     if await is_vip_member(bot, user_id, session=session):
         return DEFAULT_VIP_MULTIPLIER
     return 1
+
+
+async def get_user_role(
+    bot: Bot, user_id: int, session: AsyncSession | None = None
+) -> str:
+    """Return the textual role of the user."""
+    if is_admin(user_id):
+        return ADMIN_ROLE
+    if await is_vip_member(bot, user_id, session=session):
+        return VIP_ROLE
+    return FREE_ROLE
 
 
 # Backwards compatibility
