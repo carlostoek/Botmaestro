@@ -23,10 +23,19 @@ from services import (
 )
 from database.models import User
 from utils.text_utils import sanitize_text
-from utils.admin_state import AdminVipMessageStates, AdminManualBadgeStates
+from utils.admin_state import (
+    AdminVipMessageStates,
+    AdminManualBadgeStates,
+    AdminContentStates,
+)
 from aiogram.fsm.context import FSMContext
 from database.models import Tariff
-from utils.menu_utils import update_menu, send_temporary_reply
+from utils.menu_utils import (
+    update_menu,
+    send_temporary_reply,
+    send_clean_message,
+)
+from services.message_service import MessageService
 from database.models import set_user_menu_state
 
 router = Router()
@@ -196,6 +205,40 @@ async def assign_manual_badge(callback: CallbackQuery, state: FSMContext, sessio
         await callback.answer("No se pudo otorgar la insignia", show_alert=True)
     await state.clear()
     await update_menu(callback, "El Diván", get_admin_vip_kb(), session, "admin_vip")
+
+
+@router.callback_query(F.data == "admin_send_channel_post")
+async def vip_send_channel_post(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await send_clean_message(
+        callback.message,
+        "Envía el texto que deseas publicar en el canal:",
+        reply_markup=get_back_keyboard("admin_vip"),
+    )
+    await state.set_state(AdminContentStates.waiting_for_channel_post_text)
+    await callback.answer()
+
+
+@router.message(AdminContentStates.waiting_for_channel_post_text)
+async def process_vip_channel_post(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    if not is_admin(message.from_user.id):
+        return
+    service = MessageService(session, bot)
+    sent = await service.send_interactive_post(message.text, "vip")
+    if not sent:
+        await send_clean_message(
+            message,
+            "Canal VIP no configurado.",
+            reply_markup=get_admin_vip_kb(),
+        )
+    else:
+        await send_clean_message(
+            message,
+            f"Mensaje publicado con ID {sent.message_id}",
+            reply_markup=get_admin_vip_kb(),
+        )
+    await state.clear()
 
 
 @router.callback_query(F.data.startswith("vip_manage"))
