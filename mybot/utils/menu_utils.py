@@ -6,6 +6,19 @@ from database.models import set_user_menu_state
 
 # Cache to store the latest menu message for each user
 MENU_CACHE: dict[int, tuple[int, int]] = {}
+# Cache to track the most recent non-menu message for each user
+GENERAL_CACHE: dict[int, tuple[int, int]] = {}
+
+
+async def _delete_general(bot, user_id: int) -> None:
+    """Delete the user's previous non-menu message if it exists."""
+    prev = GENERAL_CACHE.pop(user_id, None)
+    if prev:
+        chat_id, msg_id = prev
+        try:
+            await bot.delete_message(chat_id, msg_id)
+        except TelegramBadRequest:
+            pass
 
 
 async def send_menu(
@@ -18,6 +31,7 @@ async def send_menu(
     """Send or update a menu ensuring a single message per user."""
     user_id = message.from_user.id
     bot = message.bot
+    await _delete_general(bot, user_id)
     prev = MENU_CACHE.get(user_id)
     if prev:
         chat_id, msg_id = prev
@@ -52,6 +66,7 @@ async def update_menu(
     user_id = callback.from_user.id
     bot = callback.bot
     msg = callback.message
+    await _delete_general(bot, user_id)
     try:
         await msg.edit_text(text, reply_markup=reply_markup)
         MENU_CACHE[user_id] = (msg.chat.id, msg.message_id)
@@ -75,9 +90,29 @@ async def send_temporary_reply(
     delay: int = 5,
 ) -> None:
     """Send a message that auto-deletes after ``delay`` seconds."""
+    user_id = message.from_user.id
+    bot = message.bot
+    await _delete_general(bot, user_id)
     sent = await message.answer(text, reply_markup=reply_markup)
+    GENERAL_CACHE[user_id] = (sent.chat.id, sent.message_id)
     await asyncio.sleep(delay)
     try:
-        await message.bot.delete_message(sent.chat.id, sent.message_id)
+        await bot.delete_message(sent.chat.id, sent.message_id)
     except TelegramBadRequest:
         pass
+    if GENERAL_CACHE.get(user_id) == (sent.chat.id, sent.message_id):
+        GENERAL_CACHE.pop(user_id, None)
+
+
+async def send_clean_message(
+    message: Message,
+    text: str,
+    reply_markup=None,
+) -> Message:
+    """Send a message after removing the previous one for this user."""
+    user_id = message.from_user.id
+    bot = message.bot
+    await _delete_general(bot, user_id)
+    sent = await message.answer(text, reply_markup=reply_markup)
+    GENERAL_CACHE[user_id] = (sent.chat.id, sent.message_id)
+    return sent
