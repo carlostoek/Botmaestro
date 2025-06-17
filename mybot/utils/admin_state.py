@@ -125,9 +125,15 @@ class AdminRewardStates(StatesGroup):
     """States for creating rewards from the admin panel."""
 
     creating_reward_name = State()
+    creating_reward_points = State()
     creating_reward_description = State()
-    creating_reward_cost = State()
-    creating_reward_stock = State()
+    creating_reward_type = State()
+
+    editing_select_reward = State()
+    editing_reward_name = State()
+    editing_reward_points = State()
+    editing_reward_description = State()
+    editing_reward_type = State()
 
 
 class AdminManualBadgeStates(StatesGroup):

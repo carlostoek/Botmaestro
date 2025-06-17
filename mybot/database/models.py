@@ -63,6 +63,7 @@ class Reward(AsyncAttrs, Base):
     title = Column(String, nullable=False, unique=True)
     description = Column(Text, nullable=True)
     required_points = Column(Integer, nullable=False)
+    reward_type = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())

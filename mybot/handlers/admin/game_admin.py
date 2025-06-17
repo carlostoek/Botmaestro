@@ -20,6 +20,7 @@ from utils.keyboard_utils import (
     get_admin_content_daily_gifts_keyboard,
     get_admin_content_minigames_keyboard,
     get_badge_selection_keyboard,
+    get_reward_type_keyboard,
 )
 from utils.admin_state import (
     AdminUserStates,
@@ -735,8 +736,8 @@ async def save_daily_gift_amount(message: Message, state: FSMContext, session: A
 
 # --- Gestión de Recompensas ---
 
-@router.callback_query(F.data == "admin_create_reward")
-async def admin_create_reward(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "admin_reward_add")
+async def admin_reward_add(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     await callback.message.edit_text(
@@ -752,6 +753,20 @@ async def process_reward_name(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
     await state.update_data(name=message.text)
+    await message.answer(BOT_MESSAGES["enter_reward_points"])
+    await state.set_state(AdminRewardStates.creating_reward_points)
+
+
+@router.message(AdminRewardStates.creating_reward_points)
+async def process_reward_points(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        points = int(message.text)
+    except ValueError:
+        await message.answer(BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(points=points)
     await message.answer(BOT_MESSAGES["enter_reward_description"])
     await state.set_state(AdminRewardStates.creating_reward_description)
 
@@ -760,85 +775,198 @@ async def process_reward_name(message: Message, state: FSMContext):
 async def process_reward_description(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
-    await state.update_data(description=message.text)
-    await message.answer(BOT_MESSAGES["enter_reward_cost"])
-    await state.set_state(AdminRewardStates.creating_reward_cost)
+    desc = message.text
+    if desc.lower() in ["skip", "-"]:
+        desc = None
+    await state.update_data(description=desc)
+    await message.answer(
+        BOT_MESSAGES["select_reward_type"], reply_markup=get_reward_type_keyboard()
+    )
+    await state.set_state(AdminRewardStates.creating_reward_type)
 
 
-@router.message(AdminRewardStates.creating_reward_cost)
-async def process_reward_cost(message: Message, state: FSMContext):
-    if not is_admin(message.from_user.id):
-        return
-    try:
-        cost = int(message.text)
-    except ValueError:
-        await message.answer(BOT_MESSAGES["invalid_number"])
-        return
-    await state.update_data(cost=cost)
-    await message.answer(BOT_MESSAGES["enter_reward_stock"])
-    await state.set_state(AdminRewardStates.creating_reward_stock)
-
-
-@router.message(AdminRewardStates.creating_reward_stock)
-async def process_reward_stock(message: Message, state: FSMContext, session: AsyncSession):
-    if not is_admin(message.from_user.id):
-        return
-    try:
-        stock = int(message.text)
-    except ValueError:
-        await message.answer(BOT_MESSAGES["invalid_number"])
-        return
+@router.callback_query(AdminRewardStates.creating_reward_type, F.data.startswith("reward_type_"))
+async def process_reward_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    r_type = callback.data.split("reward_type_")[-1]
     data = await state.get_data()
     service = RewardService(session)
-    await service.create_reward(data["name"], data["description"], data["cost"], stock)
-    await message.answer(
+    await service.create_reward(
+        data["name"],
+        data["points"],
+        description=data.get("description"),
+        reward_type=r_type,
+    )
+    await callback.message.edit_text(
         BOT_MESSAGES["reward_created"], reply_markup=get_admin_content_rewards_keyboard()
     )
     await state.clear()
+    await callback.answer()
 
 
-@router.callback_query(F.data == "admin_edit_reward")
-async def admin_edit_reward(callback: CallbackQuery, session: AsyncSession):
+@router.callback_query(F.data == "admin_reward_view")
+async def admin_reward_view(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     rewards = await RewardService(session).list_rewards()
-    keyboard = []
-    for r in rewards:
-        status = "✅" if r.is_active else "❌"
-        keyboard.append([
-            InlineKeyboardButton(text=f"{status} {r.name}", callback_data=f"toggle_reward_{r.id}")
-        ])
-    keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_rewards")])
+    lines = [
+        f"{r.id}. {r.title} - {r.required_points} pts ({r.reward_type or '-'})"
+        for r in rewards
+    ]
+    keyboard = [
+        [
+            InlineKeyboardButton(text="✏️", callback_data=f"edit_reward_{r.id}"),
+            InlineKeyboardButton(text="🗑", callback_data=f"del_reward_{r.id}"),
+        ]
+        for r in rewards
+    ]
+    keyboard.append([InlineKeyboardButton(text="⬅️ Volver", callback_data="admin_content_rewards")])
+    text = "Lista de recompensas:" if lines else "No hay recompensas."
+    if lines:
+        text += "\n" + "\n".join(lines)
     await callback.message.edit_text(
-        "Activar o desactivar recompensas:",
+        text,
         reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
     )
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("toggle_reward_"))
-async def toggle_reward(callback: CallbackQuery, session: AsyncSession):
+@router.callback_query(F.data == "admin_reward_delete")
+async def admin_reward_delete(callback: CallbackQuery, session: AsyncSession):
     if not is_admin(callback.from_user.id):
         return await callback.answer()
-    reward_id = int(callback.data.split("toggle_reward_")[-1])
-    service = RewardService(session)
-    reward = await service.get_reward_by_id(reward_id)
+    rewards = await RewardService(session).list_rewards()
+    keyboard = [[InlineKeyboardButton(text=r.title, callback_data=f"del_reward_{r.id}")] for r in rewards]
+    keyboard.append([InlineKeyboardButton(text="⬅️ Volver", callback_data="admin_content_rewards")])
+    await callback.message.edit_text(
+        "Selecciona la recompensa a eliminar:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("del_reward_"))
+async def confirm_delete_reward(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    reward_id = int(callback.data.split("del_reward_")[-1])
+    reward = await RewardService(session).get_reward_by_id(reward_id)
     if not reward:
         await callback.answer("Recompensa no encontrada", show_alert=True)
         return
-    await service.toggle_reward_status(reward_id, not reward.is_active)
-    # Refresh list
-    rewards = await service.list_rewards()
-    keyboard = []
-    for r in rewards:
-        status = "✅" if r.is_active else "❌"
-        keyboard.append([
-            InlineKeyboardButton(text=f"{status} {r.name}", callback_data=f"toggle_reward_{r.id}")
-        ])
-    keyboard.append([InlineKeyboardButton(text="🔙 Volver", callback_data="admin_content_rewards")])
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Confirmar", callback_data=f"confirm_del_reward_{reward_id}")],
+            [InlineKeyboardButton(text="🔙 Cancelar", callback_data="admin_reward_delete")],
+        ]
+    )
     await callback.message.edit_text(
-        "Activar o desactivar recompensas:",
+        f"¿Eliminar recompensa {reward.title}?",
+        reply_markup=kb,
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("confirm_del_reward_"))
+async def delete_reward(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    reward_id = int(callback.data.split("confirm_del_reward_")[-1])
+    service = RewardService(session)
+    await service.delete_reward(reward_id)
+    await callback.message.edit_text(
+        BOT_MESSAGES["reward_deleted"], reply_markup=get_admin_content_rewards_keyboard()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_reward_edit")
+async def admin_reward_edit(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    rewards = await RewardService(session).list_rewards()
+    keyboard = [[InlineKeyboardButton(text=r.title, callback_data=f"edit_reward_{r.id}")] for r in rewards]
+    keyboard.append([InlineKeyboardButton(text="⬅️ Volver", callback_data="admin_content_rewards")])
+    await callback.message.edit_text(
+        "Selecciona la recompensa a editar:",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
     )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("edit_reward_"))
+async def start_edit_reward(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    reward_id = int(callback.data.split("edit_reward_")[-1])
+    reward = await RewardService(session).get_reward_by_id(reward_id)
+    if not reward:
+        await callback.answer("Recompensa no encontrada", show_alert=True)
+        return
+    await state.update_data(reward_id=reward_id)
+    await callback.message.edit_text(
+        BOT_MESSAGES["enter_reward_name"],
+        reply_markup=get_back_keyboard("admin_reward_edit"),
+    )
+    await state.set_state(AdminRewardStates.editing_reward_name)
+    await callback.answer()
+
+
+@router.message(AdminRewardStates.editing_reward_name)
+async def edit_reward_name(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(name=message.text)
+    await message.answer(BOT_MESSAGES["enter_reward_points"])
+    await state.set_state(AdminRewardStates.editing_reward_points)
+
+
+@router.message(AdminRewardStates.editing_reward_points)
+async def edit_reward_points(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        points = int(message.text)
+    except ValueError:
+        await message.answer(BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(points=points)
+    await message.answer(BOT_MESSAGES["enter_reward_description"])
+    await state.set_state(AdminRewardStates.editing_reward_description)
+
+
+@router.message(AdminRewardStates.editing_reward_description)
+async def edit_reward_description(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    desc = message.text
+    if desc.lower() in ["skip", "-"]:
+        desc = None
+    await state.update_data(description=desc)
+    await message.answer(
+        BOT_MESSAGES["select_reward_type"], reply_markup=get_reward_type_keyboard()
+    )
+    await state.set_state(AdminRewardStates.editing_reward_type)
+
+
+@router.callback_query(AdminRewardStates.editing_reward_type, F.data.startswith("reward_type_"))
+async def finish_edit_reward(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    r_type = callback.data.split("reward_type_")[-1]
+    data = await state.get_data()
+    service = RewardService(session)
+    await service.update_reward(
+        data["reward_id"],
+        title=data.get("name"),
+        required_points=data.get("points"),
+        description=data.get("description"),
+        reward_type=r_type,
+    )
+    await callback.message.edit_text(
+        BOT_MESSAGES["reward_updated"], reply_markup=get_admin_content_rewards_keyboard()
+    )
+    await state.clear()
     await callback.answer()
 
