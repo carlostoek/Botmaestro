@@ -22,6 +22,9 @@ async def start_with_token(message: Message, command: CommandObject, session: As
     if not token_string:
         return
 
+    # Temporarily send back the token for debugging
+    await message.answer(f"Tu token es {token_string}")
+
     service = TokenService(session)
     try:
         duration = await service.activate_token(token_string, message.from_user.id)
