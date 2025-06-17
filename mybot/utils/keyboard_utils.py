@@ -290,7 +290,17 @@ def get_admin_content_badges_keyboard():
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Bot\u00f3n de prueba", callback_data="admin_game_test"
+                    text="➕ Crear Insignia", callback_data="admin_create_badge"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="👁 Ver Insignias", callback_data="admin_view_badges"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🗑 Eliminar Insignia", callback_data="admin_delete_badge"
                 )
             ],
             [
