@@ -7,7 +7,6 @@ from sqlalchemy import select
 
 from database.models import PendingChannelRequest, BotConfig, User
 from utils.config import CHANNEL_SCHEDULER_INTERVAL, VIP_SCHEDULER_INTERVAL
-from utils.user_roles import FREE_ROLE, VIP_ROLE
 from services.config_service import ConfigService
 
 
@@ -67,7 +66,7 @@ async def run_vip_subscription_check(bot: Bot, session_factory: async_sessionmak
         if not farewell_msg:
             farewell_msg = "Tu suscripción VIP ha expirado."
         stmt = select(User).where(
-            User.role == VIP_ROLE,
+            User.role == "vip",
             User.vip_expires_at <= remind_threshold,
             User.vip_expires_at > now,
             (User.last_reminder_sent_at.is_(None))
@@ -84,7 +83,7 @@ async def run_vip_subscription_check(bot: Bot, session_factory: async_sessionmak
                 logging.exception("Failed to send reminder to %s: %s", user.id, e)
 
         stmt = select(User).where(
-            User.role == VIP_ROLE,
+            User.role == "vip",
             User.vip_expires_at.is_not(None),
             User.vip_expires_at <= now,
         )
@@ -97,7 +96,7 @@ async def run_vip_subscription_check(bot: Bot, session_factory: async_sessionmak
                     await bot.kick_chat_member(vip_channel_id, user.id)
             except Exception as e:
                 logging.exception("Failed to remove %s from VIP channel: %s", user.id, e)
-            user.role = FREE_ROLE
+            user.role = "free"
             await bot.send_message(user.id, farewell_msg)
             logging.info("VIP expired for %s", user.id)
         await session.commit()
