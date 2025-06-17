@@ -5,8 +5,8 @@ def get_subscription_kb():
     """Return the menu keyboard for free users."""
 
     builder = InlineKeyboardBuilder()
-    builder.button(text="Información", callback_data="free_info")
-    builder.button(text="Minijuego Kinky", callback_data="free_game")
+    builder.button(text="ℹ️ Información", callback_data="free_info")
+    builder.button(text="🧩 Mini Juego Kinky", callback_data="free_game")
     builder.adjust(1)
     return builder.as_markup()
 

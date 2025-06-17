@@ -3,6 +3,10 @@ from aiogram.exceptions import TelegramBadRequest
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import set_user_menu_state
+from utils.user_roles import is_admin, is_vip_member
+from keyboards.admin_main_kb import get_admin_main_kb
+from keyboards.vip_main_kb import get_vip_main_kb
+from keyboards.subscription_kb import get_subscription_kb
 
 # Cache to store the latest menu message for each user
 MENU_CACHE: dict[int, tuple[int, int]] = {}
@@ -116,3 +120,34 @@ async def send_clean_message(
     sent = await message.answer(text, reply_markup=reply_markup)
     GENERAL_CACHE[user_id] = (sent.chat.id, sent.message_id)
     return sent
+
+
+async def send_role_menu(message: Message, session: AsyncSession) -> None:
+    """Display the appropriate main menu based on the user's role."""
+    user_id = message.from_user.id
+    bot = message.bot
+
+    if is_admin(user_id):
+        await send_menu(
+            message,
+            "Panel de Administración",
+            get_admin_main_kb(),
+            session,
+            "admin_main",
+        )
+    elif await is_vip_member(bot, user_id, session=session):
+        await send_menu(
+            message,
+            "Bienvenido al Diván de Diana",
+            get_vip_main_kb(),
+            session,
+            "vip_main",
+        )
+    else:
+        await send_menu(
+            message,
+            "Bienvenido a los Kinkys",
+            get_subscription_kb(),
+            session,
+            "free_main",
+        )
