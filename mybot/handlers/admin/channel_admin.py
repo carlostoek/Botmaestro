@@ -5,7 +5,7 @@ from aiogram.fsm.state import StatesGroup, State
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.user_roles import is_admin
-from utils.menu_utils import update_menu
+from utils.menu_utils import update_menu, send_temporary_reply
 from keyboards.admin_channels_kb import get_admin_channels_kb, get_wait_time_kb
 from keyboards.common import get_back_kb
 from services.channel_service import ChannelService
@@ -66,7 +66,7 @@ async def receive_vip_channel(message: Message, state: FSMContext, session: Asyn
         try:
             chat_id = int(message.text.strip())
         except (TypeError, ValueError):
-            await message.answer("ID inv\u00e1lido. Intenta de nuevo.")
+            await send_temporary_reply(message, "ID inválido. Intenta de nuevo.")
             return
     await state.update_data(vip_channel_id=chat_id)
     await message.answer(
@@ -87,7 +87,7 @@ async def receive_free_channel(message: Message, state: FSMContext, session: Asy
         try:
             chat_id = int(message.text.strip())
         except (TypeError, ValueError):
-            await message.answer("ID inv\u00e1lido. Intenta de nuevo.")
+            await send_temporary_reply(message, "ID inválido. Intenta de nuevo.")
             return
     data = await state.get_data()
     vip_id = int(data.get("vip_channel_id"))

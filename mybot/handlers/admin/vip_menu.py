@@ -26,7 +26,7 @@ from utils.text_utils import sanitize_text
 from utils.admin_state import AdminVipMessageStates, AdminManualBadgeStates
 from aiogram.fsm.context import FSMContext
 from database.models import Tariff
-from utils.menu_utils import update_menu
+from utils.menu_utils import update_menu, send_temporary_reply
 from database.models import set_user_menu_state
 
 router = Router()
@@ -152,12 +152,16 @@ async def process_manual_badge_user(message: Message, state: FSMContext, session
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
     if not user:
-        await message.answer("Usuario no encontrado. Intenta nuevamente:")
+        await send_temporary_reply(message, "Usuario no encontrado. Intenta nuevamente:")
         return
     await state.update_data(target_user=user.id)
     badges = await BadgeService(session).list_badges()
     if not badges:
-        await message.answer("No hay insignias disponibles.", reply_markup=get_back_keyboard("admin_vip"))
+        await send_temporary_reply(
+            message,
+            "No hay insignias disponibles.",
+            reply_markup=get_back_keyboard("admin_vip"),
+        )
         await state.clear()
         return
     builder = InlineKeyboardBuilder()

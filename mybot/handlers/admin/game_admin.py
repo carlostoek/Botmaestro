@@ -6,7 +6,7 @@ from sqlalchemy import select, func
 import datetime
 
 from utils.user_roles import is_admin
-from utils.menu_utils import update_menu
+from utils.menu_utils import update_menu, send_temporary_reply
 from utils.keyboard_utils import (
     get_admin_manage_users_keyboard,
     get_admin_users_list_keyboard,
@@ -132,7 +132,7 @@ async def process_points_amount(message: Message, state: FSMContext, session: As
     try:
         amount = int(message.text)
     except ValueError:
-        await message.answer("Cantidad inválida. Ingresa un número.")
+        await send_temporary_reply(message, "Cantidad inválida. Ingresa un número.")
         return
     user_id = data.get("target_user")
     op = data.get("points_operation")
@@ -192,7 +192,7 @@ async def process_search_user(message: Message, state: FSMContext, session: Asyn
         users = result.scalars().all()
 
     if not users:
-        await message.answer("No se encontraron usuarios.")
+        await send_temporary_reply(message, "No se encontraron usuarios.")
     else:
         response = "Resultados:\n" + "\n".join(
             f"- {(u.username or u.first_name or 'Sin nombre')} (ID: {u.id})" for u in users

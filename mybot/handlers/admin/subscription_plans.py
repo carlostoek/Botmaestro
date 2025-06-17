@@ -9,6 +9,7 @@ from utils.user_roles import is_admin
 from utils.admin_state import AdminTariffStates
 from keyboards.tarifas_kb import get_duration_kb, get_tarifas_kb
 from keyboards.common import get_back_kb
+from utils.menu_utils import send_temporary_reply
 from database.models import Tariff
 from utils.text_utils import sanitize_text
 
@@ -65,7 +66,7 @@ async def tariff_price(message: Message, state: FSMContext):
     try:
         price = int(message.text)
     except ValueError:
-        await message.answer("Precio inválido. Ingresa un número.")
+        await send_temporary_reply(message, "Precio inválido. Ingresa un número.")
         return
     await state.update_data(price=price)
     await state.set_state(AdminTariffStates.waiting_for_tariff_name)
