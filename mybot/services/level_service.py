@@ -60,6 +60,60 @@ class LevelService:
         result = await self.session.execute(select(Level).order_by(Level.min_points))
         return result.scalars().all()
 
+    async def list_levels(self) -> list[Level]:
+        """Return all levels ordered by their number."""
+        result = await self.session.execute(select(Level).order_by(Level.level_id))
+        return result.scalars().all()
+
+    async def create_level(
+        self,
+        level_number: int,
+        name: str,
+        required_points: int,
+        reward: str | None = None,
+    ) -> Level:
+        new_level = Level(
+            level_id=level_number,
+            name=name,
+            min_points=required_points,
+            reward=reward,
+        )
+        self.session.add(new_level)
+        await self.session.commit()
+        await self.session.refresh(new_level)
+        return new_level
+
+    async def update_level(
+        self,
+        level_id: int,
+        *,
+        new_level_number: int | None = None,
+        name: str | None = None,
+        required_points: int | None = None,
+        reward: str | None = None,
+    ) -> bool:
+        level = await self.session.get(Level, level_id)
+        if not level:
+            return False
+        if new_level_number is not None:
+            level.level_id = new_level_number
+        if name is not None:
+            level.name = name
+        if required_points is not None:
+            level.min_points = required_points
+        if reward is not None:
+            level.reward = reward
+        await self.session.commit()
+        return True
+
+    async def delete_level(self, level_id: int) -> bool:
+        level = await self.session.get(Level, level_id)
+        if not level:
+            return False
+        await self.session.delete(level)
+        await self.session.commit()
+        return True
+
     async def get_level_threshold(self, level_id: int) -> int:
         levels = await self._get_levels()
         for lvl in levels:

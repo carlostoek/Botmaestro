@@ -101,6 +101,9 @@ BOT_MESSAGES = {
     "reward_updated": "✅ Recompensa actualizada.",
     "invalid_number": "Ingresa un número válido.",
     "user_no_badges": "Aún no has desbloqueado ninguna insignia. ¡Sigue participando!",
+    "level_created": "✅ Nivel creado correctamente.",
+    "level_updated": "✅ Nivel actualizado.",
+    "level_deleted": "❌ Nivel eliminado.",
 }
 
 # Textos descriptivos para las insignias disponibles en el sistema.

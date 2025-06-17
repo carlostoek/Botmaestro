@@ -318,9 +318,16 @@ def get_admin_content_levels_keyboard():
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="Bot\u00f3n de prueba", callback_data="admin_game_test"
-                )
+                InlineKeyboardButton(text="➕ Añadir Nivel", callback_data="admin_level_add")
+            ],
+            [
+                InlineKeyboardButton(text="📝 Editar Nivel", callback_data="admin_level_edit")
+            ],
+            [
+                InlineKeyboardButton(text="🗑 Eliminar Nivel", callback_data="admin_level_delete")
+            ],
+            [
+                InlineKeyboardButton(text="📋 Ver Niveles", callback_data="admin_levels_view")
             ],
             [
                 InlineKeyboardButton(
