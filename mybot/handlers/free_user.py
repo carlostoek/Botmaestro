@@ -2,7 +2,11 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 
-from keyboards.subscription_kb import get_subscription_kb
+from keyboards.subscription_kb import (
+    get_subscription_kb,
+    get_free_info_kb,
+    get_free_game_kb,
+)
 from utils.user_roles import is_admin, is_vip
 
 router = Router()
@@ -20,19 +24,25 @@ async def subscription_menu(message: Message):
 
 @router.callback_query(F.data == "free_info")
 async def show_info(callback: CallbackQuery):
-    """Provide basic information to free users."""
+    """Display the info section for free users."""
     await callback.answer()
     await callback.message.edit_text(
-        "Información sobre el canal y sus beneficios.",
-        reply_markup=get_subscription_kb(),
+        "Información del canal gratuito.",
+        reply_markup=get_free_info_kb(),
     )
 
 
 @router.callback_query(F.data == "free_game")
 async def free_game(callback: CallbackQuery):
-    """Simple placeholder for the free version of the game."""
+    """Placeholder mini game for free users."""
     await callback.message.edit_text(
-        "Versión gratuita del Juego del Diván. ¡Disfruta!",
-        reply_markup=get_subscription_kb(),
+        "Mini Juego Kinky (versión gratuita)",
+        reply_markup=get_free_game_kb(),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.in_("free_info_test free_game_test".split()))
+async def dummy_button(callback: CallbackQuery):
+    """Handle placeholder buttons in the free user menu."""
+    await callback.answer("Botón de prueba")
