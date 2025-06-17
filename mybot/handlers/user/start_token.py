@@ -9,6 +9,7 @@ from database.models import User
 from utils.text_utils import sanitize_text
 from services.token_service import TokenService
 from services.subscription_service import SubscriptionService
+from utils.menu_utils import send_temporary_reply
 from services.achievement_service import AchievementService
 from services.config_service import ConfigService
 
@@ -25,7 +26,7 @@ async def start_with_token(message: Message, command: CommandObject, session: As
     try:
         duration = await service.activate_token(token_string, message.from_user.id)
     except Exception:
-        await message.answer("Token inválido o ya utilizado.")
+        await send_temporary_reply(message, "Token inválido o ya utilizado.")
         return
 
     user = await session.get(User, message.from_user.id)

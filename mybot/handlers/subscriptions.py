@@ -10,6 +10,7 @@ from database.models import User
 from utils.text_utils import sanitize_text
 from services.config_service import ConfigService
 from services.achievement_service import AchievementService
+from utils.menu_utils import send_temporary_reply
 
 router = Router()
 
@@ -41,7 +42,7 @@ async def activate_vip(message: Message, session: AsyncSession, bot: Bot):
 
     subscription_duration = await validate_token(token, session)
     if not subscription_duration:
-        await message.answer("Token inválido o ya utilizado.")
+        await send_temporary_reply(message, "Token inválido o ya utilizado.")
         return
 
     user = await session.get(User, message.from_user.id)

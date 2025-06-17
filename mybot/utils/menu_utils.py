@@ -1,20 +1,83 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.exceptions import TelegramBadRequest
+import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import set_user_menu_state
 
-
-async def send_menu(message: Message, text: str, reply_markup, session: AsyncSession, state: str) -> None:
-    """Send a new menu message and store the user's state."""
-    await message.answer(text, reply_markup=reply_markup)
-    await set_user_menu_state(session, message.from_user.id, state)
+# Cache to store the latest menu message for each user
+MENU_CACHE: dict[int, tuple[int, int]] = {}
 
 
-async def update_menu(callback: CallbackQuery, text: str, reply_markup, session: AsyncSession, state: str) -> None:
-    """Edit the current menu message and update the user's state."""
+async def send_menu(
+    message: Message,
+    text: str,
+    reply_markup,
+    session: AsyncSession,
+    state: str,
+) -> None:
+    """Send or update a menu ensuring a single message per user."""
+    user_id = message.from_user.id
+    bot = message.bot
+    prev = MENU_CACHE.get(user_id)
+    if prev:
+        chat_id, msg_id = prev
+        try:
+            await bot.edit_message_text(
+                text,
+                chat_id=chat_id,
+                message_id=msg_id,
+                reply_markup=reply_markup,
+            )
+            await set_user_menu_state(session, user_id, state)
+            return
+        except TelegramBadRequest:
+            try:
+                await bot.delete_message(chat_id, msg_id)
+            except TelegramBadRequest:
+                pass
+
+    sent = await message.answer(text, reply_markup=reply_markup)
+    MENU_CACHE[user_id] = (sent.chat.id, sent.message_id)
+    await set_user_menu_state(session, user_id, state)
+
+
+async def update_menu(
+    callback: CallbackQuery,
+    text: str,
+    reply_markup,
+    session: AsyncSession,
+    state: str,
+) -> None:
+    """Edit the previous menu message or send a new one."""
+    user_id = callback.from_user.id
+    bot = callback.bot
+    msg = callback.message
     try:
-        await callback.message.edit_text(text, reply_markup=reply_markup)
+        await msg.edit_text(text, reply_markup=reply_markup)
+        MENU_CACHE[user_id] = (msg.chat.id, msg.message_id)
     except TelegramBadRequest as exc:
-        if "message is not modified" not in str(exc).lower():
-            raise
-    await set_user_menu_state(session, callback.from_user.id, state)
+        if "message is not modified" in str(exc).lower():
+            pass
+        else:
+            try:
+                await bot.delete_message(msg.chat.id, msg.message_id)
+            except TelegramBadRequest:
+                pass
+            new_msg = await bot.send_message(msg.chat.id, text, reply_markup=reply_markup)
+            MENU_CACHE[user_id] = (new_msg.chat.id, new_msg.message_id)
+    await set_user_menu_state(session, user_id, state)
+
+
+async def send_temporary_reply(
+    message: Message,
+    text: str,
+    reply_markup=None,
+    delay: int = 5,
+) -> None:
+    """Send a message that auto-deletes after ``delay`` seconds."""
+    sent = await message.answer(text, reply_markup=reply_markup)
+    await asyncio.sleep(delay)
+    try:
+        await message.bot.delete_message(sent.chat.id, sent.message_id)
+    except TelegramBadRequest:
+        pass
