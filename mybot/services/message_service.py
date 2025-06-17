@@ -43,13 +43,14 @@ class MessageService:
             return None
 
         try:
+            buttons = await config.get_reaction_buttons()
             sent = await self.bot.send_message(
-                channel_id, text, reply_markup=get_interactive_post_kb(0)
+                channel_id, text, reply_markup=get_interactive_post_kb(0, buttons)
             )
             await self.bot.edit_message_reply_markup(
                 channel_id,
                 sent.message_id,
-                reply_markup=get_interactive_post_kb(sent.message_id),
+                reply_markup=get_interactive_post_kb(sent.message_id, buttons),
             )
             return sent
         except (TelegramBadRequest, TelegramForbiddenError, TelegramAPIError):

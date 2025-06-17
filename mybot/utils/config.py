@@ -43,6 +43,10 @@ FREE_CHANNEL_ID = int(os.environ.get("FREE_CHANNEL_ID", "0"))
 CHANNEL_SCHEDULER_INTERVAL = int(os.environ.get("CHANNEL_SCHEDULER_INTERVAL", "30"))
 VIP_SCHEDULER_INTERVAL = int(os.environ.get("VIP_SCHEDULER_INTERVAL", "3600"))
 
+# Default reaction button texts used on channel posts when no custom values
+# are configured via the admin settings menu.
+DEFAULT_REACTION_BUTTONS = ["👍 Me gusta", "🔁 Compartir", "🔥 Sexy"]
+
 class Config:
     BOT_TOKEN = BOT_TOKEN
     ADMIN_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
