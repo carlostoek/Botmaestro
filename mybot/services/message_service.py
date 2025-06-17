@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config_service import ConfigService
 from database.models import ButtonReaction
 from keyboards.common import get_interactive_post_kb
+from utils.config import VIP_CHANNEL_ID, FREE_CHANNEL_ID
 
 
 class MessageService:
@@ -21,10 +22,17 @@ class MessageService:
     ) -> Message | None:
         """Send a message with interactive buttons to the configured channel."""
         config = ConfigService(self.session)
-        if channel_type.lower() == "vip":
+        channel_type = channel_type.lower()
+        if channel_type == "vip":
             channel_id = await config.get_vip_channel_id()
-        else:
+            if channel_id is None:
+                channel_id = VIP_CHANNEL_ID or None
+        elif channel_type == "free":
             channel_id = await config.get_free_channel_id()
+            if channel_id is None:
+                channel_id = FREE_CHANNEL_ID or None
+        else:
+            channel_id = None
         if not channel_id:
             return None
 
