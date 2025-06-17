@@ -1,6 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from aiogram.filters import Command
 
 from datetime import datetime
@@ -12,7 +13,8 @@ from utils.messages import BOT_MESSAGES
 from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
 from services.mission_service import MissionService
-from database.models import User, set_user_menu_state
+from services.achievement_service import AchievementService
+from database.models import User, UserBadge, set_user_menu_state
 from utils.text_utils import sanitize_text
 
 router = Router()
@@ -67,6 +69,42 @@ async def vip_missions(callback: CallbackQuery, session: AsyncSession):
         text = "\n".join(lines)
 
     await callback.message.edit_text(text, reply_markup=get_missions_keyboard(missions))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vip_badges")
+async def vip_badges(callback: CallbackQuery, session: AsyncSession):
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+        return await callback.answer()
+
+    ach_service = AchievementService(session)
+    badges = await ach_service.get_user_badges(callback.from_user.id)
+
+    if not badges:
+        text = BOT_MESSAGES.get(
+            "user_no_badges",
+            "Aún no has desbloqueado ninguna insignia. ¡Sigue participando!",
+        )
+    else:
+        # Fetch award dates
+        stmt = select(UserBadge.badge_id, UserBadge.awarded_at).where(
+            UserBadge.user_id == callback.from_user.id
+        )
+        result = await session.execute(stmt)
+        dates = {row.badge_id: row.awarded_at for row in result}
+
+        lines = ["*Tus insignias:*\n"]
+        for b in badges:
+            date_str = (
+                f" (obtenida el {dates[b.id].strftime('%d/%m/%Y')})"
+                if b.id in dates and dates[b.id]
+                else ""
+            )
+            line = f"{b.icon or ''} *{b.name}* - {b.description or ''}{date_str}"
+            lines.append(line)
+        text = "\n".join(lines)
+
+    await callback.message.edit_text(text, reply_markup=get_vip_kb())
     await callback.answer()
 
 
