@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from database.models import VipSubscription, User, Token, Tariff
+from utils.user_roles import VIP_ROLE, FREE_ROLE
 
 
 class SubscriptionService:
@@ -84,7 +85,7 @@ class SubscriptionService:
 
         user = await self.session.get(User, user_id)
         if user:
-            user.role = "vip"
+            user.role = VIP_ROLE
             if user.vip_expires_at and user.vip_expires_at > now:
                 user.vip_expires_at = user.vip_expires_at + timedelta(days=days)
             else:
@@ -103,7 +104,7 @@ class SubscriptionService:
 
         user = await self.session.get(User, user_id)
         if user:
-            user.role = "free"
+            user.role = FREE_ROLE
             user.vip_expires_at = None
 
         await self.session.commit()
