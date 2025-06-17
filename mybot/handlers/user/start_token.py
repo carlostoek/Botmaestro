@@ -10,7 +10,6 @@ from utils.text_utils import sanitize_text
 from services.token_service import TokenService
 from services.subscription_service import SubscriptionService
 from utils.menu_utils import send_temporary_reply
-from utils.user_roles import VIP_ROLE
 from services.achievement_service import AchievementService
 from services.config_service import ConfigService
 
@@ -41,7 +40,7 @@ async def start_with_token(message: Message, command: CommandObject, session: As
         )
         session.add(user)
 
-    user.role = VIP_ROLE
+    user.role = "vip"
     expires_at = datetime.utcnow() + timedelta(days=duration)
     user.vip_expires_at = expires_at
     user.last_reminder_sent_at = None
