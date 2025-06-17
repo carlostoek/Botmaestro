@@ -108,6 +108,7 @@ BOT_MESSAGES = {
     "enter_reward_stock": "¿Cuántas unidades hay disponibles? Escribe -1 para ilimitadas:",
     "reward_created": "✅ Recompensa creada.",
     "invalid_number": "Ingresa un número válido.",
+    "user_no_badges": "Aún no has desbloqueado ninguna insignia. ¡Sigue participando!",
 }
 
 # Textos descriptivos para las insignias disponibles en el sistema.
