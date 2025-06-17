@@ -10,6 +10,7 @@ class ConfigService:
     VIP_CHANNEL_KEY = "VIP_CHANNEL_ID"
     FREE_CHANNEL_KEY = "FREE_CHANNEL_ID"
     REACTION_BUTTONS_KEY = "reaction_buttons"
+    VIP_REACTIONS_KEY = "vip_message_reactions"
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -61,4 +62,16 @@ class ConfigService:
         from utils.config import DEFAULT_REACTION_BUTTONS
 
         return DEFAULT_REACTION_BUTTONS
+
+    async def get_vip_reactions(self) -> list[str]:
+        """Return the list of default VIP message reactions."""
+        value = await self.get_value(self.VIP_REACTIONS_KEY)
+        if value:
+            emojis = [e.strip() for e in value.split(";") if e.strip()]
+            return emojis[:5]
+        return []
+
+    async def set_vip_reactions(self, reactions: list[str]) -> ConfigEntry:
+        """Store the default VIP message reactions as a semicolon string."""
+        return await self.set_value(self.VIP_REACTIONS_KEY, ";".join(reactions))
 
