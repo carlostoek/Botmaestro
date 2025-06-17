@@ -38,7 +38,7 @@ class User(AsyncAttrs, Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Role management and VIP expiration
-    role = Column(String, default="free")
+    role = Column(String, default="Usuario Free")
     vip_expires_at = Column(DateTime, nullable=True)
     last_reminder_sent_at = Column(DateTime, nullable=True)
 
