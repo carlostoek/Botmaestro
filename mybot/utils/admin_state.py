@@ -128,3 +128,10 @@ class AdminRewardStates(StatesGroup):
     creating_reward_description = State()
     creating_reward_cost = State()
     creating_reward_stock = State()
+
+
+class AdminManualBadgeStates(StatesGroup):
+    """States for manually awarding badges."""
+
+    waiting_for_user = State()
+    waiting_for_badge = State()

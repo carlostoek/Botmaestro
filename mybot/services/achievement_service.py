@@ -159,7 +159,7 @@ class AchievementService:
                 unlockable.append(badge)
         return unlockable
 
-    async def award_badge(self, user_id: int, badge_id: int) -> bool:
+    async def award_badge(self, user_id: int, badge_id: int, *, force: bool = False) -> bool:
         badge = await self.session.get(Badge, badge_id)
         if not badge or not badge.is_active:
             return False
@@ -170,7 +170,7 @@ class AchievementService:
         existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing:
             return False
-        if not await self._badge_condition_met(user_id, badge):
+        if not force and not await self._badge_condition_met(user_id, badge):
             return False
         self.session.add(UserBadge(user_id=user_id, badge_id=badge_id))
         await self.session.commit()
