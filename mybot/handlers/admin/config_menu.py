@@ -42,9 +42,10 @@ async def prompt_reaction_buttons(callback: CallbackQuery, session: AsyncSession
     if not is_admin(callback.from_user.id):
         return await callback.answer()
     await callback.message.edit_text(
-        "Envía los textos para las reacciones separados por ';' (ejemplo: 👍;👎)",
+        "Envía el emoji para la primera reacción:",
         reply_markup=get_back_keyboard("admin_config"),
     )
+    await state.update_data(reactions=[])
     await state.set_state(AdminConfigStates.waiting_for_reaction_buttons)
     await callback.answer()
 
@@ -53,14 +54,39 @@ async def prompt_reaction_buttons(callback: CallbackQuery, session: AsyncSession
 async def set_reaction_buttons(message: Message, state: FSMContext, session: AsyncSession):
     if not is_admin(message.from_user.id):
         return
-    texts = [t.strip() for t in message.text.split(";") if t.strip()]
-    if len(texts) < 2:
-        await message.answer("Debes proporcionar al menos dos textos separados por ';'")
+    data = await state.get_data()
+    reactions = data.get("reactions", [])
+    if len(reactions) >= 10:
+        await message.answer(
+            "Se alcanzó el número máximo de reacciones (10).",
+            reply_markup=get_reaction_confirm_kb(),
+        )
+        return
+    reactions.append(message.text.strip())
+    await state.update_data(reactions=reactions)
+    if len(reactions) >= 10:
+        text = f"Se agregó {message.text.strip()}. Máximo alcanzado."
+    else:
+        text = f"Se agregó {message.text.strip()}. Envía otro emoji o presiona Aceptar."
+    await message.answer(text, reply_markup=get_reaction_confirm_kb())
+
+
+@router.callback_query(AdminConfigStates.waiting_for_reaction_buttons, F.data == "save_reactions")
+async def save_reaction_buttons_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    data = await state.get_data()
+    reactions = data.get("reactions", [])
+    if not reactions:
+        await callback.answer("Debes ingresar al menos una reacción.", show_alert=True)
         return
     service = ConfigService(session)
-    await service.set_value("reaction_buttons", ";".join(texts))
-    await message.answer("Botones de reacción actualizados.", reply_markup=get_admin_config_kb())
+    await service.set_value("reaction_buttons", ";".join(reactions))
+    await callback.message.edit_text(
+        "Botones de reacción actualizados.", reply_markup=get_admin_config_kb()
+    )
     await state.clear()
+    await callback.answer()
 
 
 @router.callback_query(F.data == "config_scheduler")

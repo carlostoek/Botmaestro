@@ -56,8 +56,8 @@ class ConfigService:
         value = await self.get_value(self.REACTION_BUTTONS_KEY)
         if value:
             texts = [t.strip() for t in value.split(";") if t.strip()]
-            if len(texts) >= 3:
-                return texts[:3]
+            if texts:
+                return texts[:10]
         from utils.config import DEFAULT_REACTION_BUTTONS
 
         return DEFAULT_REACTION_BUTTONS

@@ -41,3 +41,12 @@ def get_config_done_kb():
     builder.button(text="Regresar al menú anterior", callback_data="admin_back")
     builder.adjust(1)
     return builder.as_markup()
+
+
+def get_reaction_confirm_kb():
+    """Keyboard shown while configuring reaction emojis."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Aceptar", callback_data="save_reactions")
+    builder.button(text="🔙 Volver", callback_data="admin_config")
+    builder.adjust(1)
+    return builder.as_markup()

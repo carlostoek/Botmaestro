@@ -14,7 +14,7 @@ async def handle_interactive_post_callback(
     parts = callback.data.split("_")
     if len(parts) < 3:
         return await callback.answer()
-    reaction_type = parts[1]
+    reaction_type = parts[1]  # e.g. 'r0'
     try:
         message_id = int(parts[2])
     except ValueError:
