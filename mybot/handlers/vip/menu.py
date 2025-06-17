@@ -13,6 +13,7 @@ from utils.keyboard_utils import (
     get_missions_keyboard,
 )
 from keyboards.vip_main_kb import get_vip_main_kb
+from keyboards.vip_game_kb import get_game_menu_kb
 from utils.messages import BOT_MESSAGES
 from utils.message_utils import get_profile_message
 from services.subscription_service import SubscriptionService
@@ -36,26 +37,45 @@ async def vip_menu(message: Message, session: AsyncSession):
     )
 
 
+@router.callback_query(F.data == "vip_menu")
+async def vip_menu_cb(callback: CallbackQuery, session: AsyncSession):
+    """Return to the VIP main menu from callbacks."""
+    if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
+        return await callback.answer()
+    sub_service = SubscriptionService(session)
+    sub = await sub_service.get_subscription(callback.from_user.id)
+    status = "Activa" if sub else "Sin registro"
+    await callback.message.edit_text(
+        f"Suscripción VIP: {status}", reply_markup=get_vip_main_kb()
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data == "vip_subscription")
 async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
     sub_service = SubscriptionService(session)
     sub = await sub_service.get_subscription(callback.from_user.id)
+
     if not sub:
-        text = "No registrada"
+        text = "No tienes una suscripción activa."
     else:
         join_date = sub.created_at.strftime("%d/%m/%Y") if sub.created_at else "?"
         if sub.expires_at:
+            expire_date = sub.expires_at.strftime("%d/%m/%Y")
             days_left = (sub.expires_at - datetime.utcnow()).days
             text = (
-                f"Suscripción activa desde {join_date}.\n"
+                f"Fecha de inicio: {join_date}\n"
+                f"Fecha de término: {expire_date}\n"
                 f"Días restantes: {days_left}"
             )
         else:
-            text = f"Suscripción activa desde {join_date}.\nSin fecha de expiración"
+            text = f"Fecha de inicio: {join_date}\nSin fecha de término"
 
-    await callback.message.edit_text(text, reply_markup=get_vip_main_kb())
+    await callback.message.edit_text(
+        text, reply_markup=get_back_keyboard("vip_menu")
+    )
     await callback.answer()
 
 
@@ -125,7 +145,7 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
         return await callback.answer()
     await callback.message.edit_text(
         BOT_MESSAGES["start_welcome_returning_user"],
-        reply_markup=get_main_menu_keyboard(),
+        reply_markup=get_game_menu_kb(),
     )
     await set_user_menu_state(session, callback.from_user.id, "root")
     await callback.answer()
