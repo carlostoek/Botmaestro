@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from aiogram import Bot
 from aiogram.types import Message
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config_service import ConfigService
@@ -36,13 +37,18 @@ class MessageService:
         if not channel_id:
             return None
 
-        sent = await self.bot.send_message(
-            channel_id, text, reply_markup=get_interactive_post_kb(0)
-        )
-        await self.bot.edit_message_reply_markup(
-            channel_id, sent.message_id, reply_markup=get_interactive_post_kb(sent.message_id)
-        )
-        return sent
+        try:
+            sent = await self.bot.send_message(
+                channel_id, text, reply_markup=get_interactive_post_kb(0)
+            )
+            await self.bot.edit_message_reply_markup(
+                channel_id,
+                sent.message_id,
+                reply_markup=get_interactive_post_kb(sent.message_id),
+            )
+            return sent
+        except (TelegramBadRequest, TelegramForbiddenError, TelegramAPIError):
+            return None
 
     async def register_reaction(
         self, user_id: int, message_id: int, reaction_type: str
