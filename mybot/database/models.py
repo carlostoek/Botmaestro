@@ -1,5 +1,17 @@
 # database/models.py
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, JSON, Text, ForeignKey, Float, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    BigInteger,
+    DateTime,
+    Boolean,
+    JSON,
+    Text,
+    ForeignKey,
+    Float,
+    UniqueConstraint,
+)
 from uuid import uuid4
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -8,16 +20,17 @@ from sqlalchemy.future import select
 
 Base = declarative_base()
 
+
 class User(AsyncAttrs, Base):
     __tablename__ = "users"
-    id = Column(BigInteger, primary_key=True, unique=True) # Telegram User ID
+    id = Column(BigInteger, primary_key=True, unique=True)  # Telegram User ID
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     points = Column(Float, default=0)
     level = Column(Integer, default=1)
-    achievements = Column(JSON, default={}) # {'achievement_id': timestamp_isoformat}
-    missions_completed = Column(JSON, default={}) # {'mission_id': timestamp_isoformat}
+    achievements = Column(JSON, default={})  # {'achievement_id': timestamp_isoformat}
+    missions_completed = Column(JSON, default={})  # {'mission_id': timestamp_isoformat}
     # Track last reset for daily/weekly missions
     last_daily_mission_reset = Column(DateTime, default=func.now())
     last_weekly_mission_reset = Column(DateTime, default=func.now())
@@ -28,25 +41,41 @@ class User(AsyncAttrs, Base):
     role = Column(String, default="free")
     vip_expires_at = Column(DateTime, nullable=True)
     last_reminder_sent_at = Column(DateTime, nullable=True)
-    
+
     # ¡NUEVA COLUMNA para el estado del menú!
-    menu_state = Column(String, default="root") # e.g., "root", "profile", "missions", "rewards"
+    menu_state = Column(
+        String, default="root"
+    )  # e.g., "root", "profile", "missions", "rewards"
 
     # ¡NUEVA COLUMNA para registrar reacciones a mensajes del canal!
     # Guarda un diccionario donde la clave es el message_id del canal y el valor es un booleano (True)
     # o el timestamp de la reacción para futura expansión si necesitamos historial.
     # Por ahora, un simple booleano es suficiente para registrar si el usuario ya reaccionó a ese mensaje.
-    channel_reactions = Column(JSON, default={}) # {'message_id': True}
+    channel_reactions = Column(JSON, default={})  # {'message_id': True}
+
 
 class Reward(AsyncAttrs, Base):
+    """Rewards unlocked by reaching a number of points."""
+
     __tablename__ = "rewards"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False, unique=True)
-    description = Column(Text)
-    cost = Column(Integer, default=0)
-    stock = Column(Integer, default=-1) # -1 for unlimited
+    title = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=True)
+    required_points = Column(Integer, nullable=False)
+    image_url = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
+
+
+class UserReward(AsyncAttrs, Base):
+    """Stores claimed rewards per user."""
+
+    __tablename__ = "user_rewards"
+
+    user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    reward_id = Column(Integer, ForeignKey("rewards.id"), primary_key=True)
+    claimed_at = Column(DateTime, default=func.now())
 
 
 class Achievement(AsyncAttrs, Base):
@@ -64,6 +93,7 @@ class UserAchievement(AsyncAttrs, Base):
     user_id = Column(BigInteger, ForeignKey("users.id"), primary_key=True)
     achievement_id = Column(String, ForeignKey("achievements.id"), primary_key=True)
     unlocked_at = Column(DateTime, default=func.now())
+
 
 class Mission(AsyncAttrs, Base):
     __tablename__ = "missions"
@@ -102,12 +132,13 @@ class UserMissionProgress(AsyncAttrs, Base):
     completed = Column(Boolean, default=False)
     completed_at = Column(DateTime, nullable=True)
 
+
 class Event(AsyncAttrs, Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     description = Column(Text)
-    multiplier = Column(Integer, default=1) # e.g., 2 for double points
+    multiplier = Column(Integer, default=1)  # e.g., 2 for double points
     is_active = Column(Boolean, default=True)
     start_time = Column(DateTime, default=func.now())
     end_time = Column(DateTime, nullable=True)
@@ -154,9 +185,7 @@ class UserBadge(AsyncAttrs, Base):
     badge_id = Column(Integer, ForeignKey("badges.id"), nullable=False)
     awarded_at = Column(DateTime, default=func.now())
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "badge_id", name="uix_user_badges"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "badge_id", name="uix_user_badges"),)
 
 
 class Level(AsyncAttrs, Base):
@@ -264,7 +293,6 @@ class Channel(AsyncAttrs, Base):
     title = Column(String, nullable=True)
 
 
-
 class PendingChannelRequest(AsyncAttrs, Base):
     __tablename__ = "pending_channel_requests"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -316,10 +344,10 @@ async def get_user_menu_state(session, user_id: int) -> str:
         return user.menu_state
     return "root"
 
+
 async def set_user_menu_state(session, user_id: int, state: str):
     user = await session.get(User, user_id)
     if user:
         user.menu_state = state
         await session.commit()
         await session.refresh(user)
-

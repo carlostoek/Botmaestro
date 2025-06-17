@@ -33,21 +33,18 @@ BOT_MESSAGES = {
     "reward_shop_empty": "Por ahora no hay recompensas disponibles. Pero pronto sí. 😉",
     "reward_not_found": "Esa recompensa ya no está aquí... o aún no está lista.",
     "reward_not_registered": "Tu perfil no está activo. Usa /start para comenzar *El Juego del Diván*.",
-    "reward_out_of_stock": "Esa recompensa ya se fue. Las cosas buenas no esperan.",
     "reward_not_enough_points": "Te faltan `{required_points}` puntos. Ahora tienes `{user_points}`. Pero sigue... estás cerca.",
-    "reward_purchase_success": "🎉 ¡Recompensa conseguida! Algo bonito está por llegar.",
-    "reward_purchase_failed": "No pudimos procesar tu elección. Inténtalo más tarde.",
-
+    "reward_claim_success": "🎉 ¡Recompensa reclamada!",
+    "reward_claim_failed": "No pudimos procesar tu solicitud.",
+    "reward_already_claimed": "Esta recompensa ya fue reclamada.",
     # Niveles
     "level_up_notification": "🎉 ¡Subiste a Nivel {level}: {level_name}! {reward}",
     "special_level_reward": "✨ Recompensa especial por alcanzar el nivel {level}! {reward}",
-
     # Mensajes de ranking (Unificados)
     "ranking_title": "🏆 *Tabla de Posiciones*",
     "ranking_entry": "#{rank}. @{username} - Puntos: `{points}`, Nivel: `{level}`",
     "no_ranking_data": "Aún no hay datos en el ranking. ¡Sé el primero en aparecer!",
     "back_to_main_menu": "Has regresado al centro del Diván. Elige por dónde seguir explorando.",
-
     # Botones
     "profile_achievements_button_text": "🏅 Mis Logros",
     "profile_active_missions_button_text": "🎯 Mis Desafíos",
@@ -61,7 +58,6 @@ BOT_MESSAGES = {
     "prev_page_button_text": "← Anterior",
     "next_page_button_text": "Siguiente →",
     "back_to_main_menu_button_text": "← Volver al inicio",
-
     # Detalles
     "mission_details_text": (
         "🎯 *Desafío:* {mission_name}\n\n"
@@ -70,15 +66,11 @@ BOT_MESSAGES = {
         "⏱️ *Frecuencia:* `{mission_type}`"
     ),
     "reward_details_text": (
-        "🎁 *Recompensa:* {reward_name}\n\n"
+        "🎁 *Recompensa:* {reward_title}\n\n"
         "📌 *Descripción:* {reward_description}\n"
-        "💰 *Costo:* `{reward_cost}` puntos\n"
-        "{stock_info}"
+        "🔥 *Requiere:* `{required_points}` puntos"
     ),
-    "reward_details_stock_info": "📦 *Disponibles:* `{stock_left}`",
-    "reward_details_no_stock_info": "📦 *Disponibles:* ilimitadas",
     "reward_details_not_enough_points_alert": "💔 Te faltan puntos para esta recompensa. Necesitas `{required_points}`, tienes `{user_points}`. Sigue sumando, lo estás haciendo bien.",
-
     # Mensajes adicionales que eran mencionados en user_handlers.py
     "menu_missions_text": "Aquí están los desafíos que puedes emprender. ¡Cada uno te acerca más!",
     "menu_rewards_text": "¡Es hora de canjear tus puntos! Aquí tienes las recompensas disponibles:",
@@ -96,11 +88,9 @@ BOT_MESSAGES = {
     "trivia_correct": "¡Correcto! +5 puntos",
     "trivia_wrong": "Respuesta incorrecta.",
     "unrecognized_command_text": "Comando no reconocido. Aquí está el menú principal:",
-
     # Notificaciones de gamificación
     "challenge_completed": "🎯 ¡Desafío {challenge_type} completado! +{points} puntos",
     "reaction_registered": "👍 ¡Reacción registrada!",
-
     # --- Administración de Recompensas ---
     "enter_reward_name": "Ingresa el nombre de la recompensa:",
     "enter_reward_description": "Describe brevemente la recompensa:",

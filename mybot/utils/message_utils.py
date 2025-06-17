@@ -7,23 +7,24 @@ from services.achievement_service import ACHIEVEMENTS
 from utils.messages import BOT_MESSAGES
 import datetime
 
-async def get_profile_message(user: User, active_missions: list[Mission], session: AsyncSession) -> str:
+
+async def get_profile_message(
+    user: User, active_missions: list[Mission], session: AsyncSession
+) -> str:
     points_to_next_level_text = ""
     level_service = LevelService(session)
     next_level_threshold = await level_service.get_level_threshold(user.level + 1)
-    if next_level_threshold != float('inf'):
+    if next_level_threshold != float("inf"):
         points_needed = next_level_threshold - user.points
         # Usar el mensaje personalizado para puntos al siguiente nivel
         points_to_next_level_text = BOT_MESSAGES["profile_points_to_next_level"].format(
             points_needed=points_needed,
             next_level=user.level + 1,
-            next_level_threshold=next_level_threshold
+            next_level_threshold=next_level_threshold,
         )
     else:
         # Usar el mensaje personalizado para nivel máximo
         points_to_next_level_text = BOT_MESSAGES["profile_max_level"]
-
-
 
     # Usar el mensaje personalizado para no logros
     achievements_text = BOT_MESSAGES["profile_no_achievements"]
@@ -35,12 +36,14 @@ async def get_profile_message(user: User, active_missions: list[Mission], sessio
         for rec in records:
             ach_data = ACHIEVEMENTS.get(rec.achievement_id)
             if ach_data:
-                granted_achievements_list.append({
-                    "id": rec.achievement_id,
-                    "name": ach_data.get("name", rec.achievement_id),
-                    "icon": ach_data.get("icon", ""),
-                    "granted_at": rec.unlocked_at.isoformat(),
-                })
+                granted_achievements_list.append(
+                    {
+                        "id": rec.achievement_id,
+                        "name": ach_data.get("name", rec.achievement_id),
+                        "icon": ach_data.get("icon", ""),
+                        "granted_at": rec.unlocked_at.isoformat(),
+                    }
+                )
         granted_achievements_list.sort(key=lambda x: x["granted_at"])
 
         achievements_list = [
@@ -48,7 +51,9 @@ async def get_profile_message(user: User, active_missions: list[Mission], sessio
             for ach in granted_achievements_list
         ]
         achievements_text = (
-            BOT_MESSAGES["profile_achievements_title"] + "\n" + "\n".join(achievements_list)
+            BOT_MESSAGES["profile_achievements_title"]
+            + "\n"
+            + "\n".join(achievements_list)
         )
 
     # Usar el mensaje personalizado para no misiones activas
@@ -58,7 +63,11 @@ async def get_profile_message(user: User, active_missions: list[Mission], sessio
             f"• {mission.name} ({mission.reward_points} Puntos)"
             for mission in active_missions
         ]
-        missions_text = BOT_MESSAGES["profile_active_missions_title"] + "\n" + "\n".join(missions_list)
+        missions_text = (
+            BOT_MESSAGES["profile_active_missions_title"]
+            + "\n"
+            + "\n".join(missions_list)
+        )
 
     return (
         # Usar mensajes personalizados para cada parte del perfil
@@ -66,9 +75,10 @@ async def get_profile_message(user: User, active_missions: list[Mission], sessio
         f"{BOT_MESSAGES['profile_points'].format(user_points=user.points)}\n"
         f"{BOT_MESSAGES['profile_level'].format(user_level=user.level)}\n"
         f"{points_to_next_level_text}\n\n"
-        f"{achievements_text}\n\n" # Incluye el título de logros
-        f"{missions_text}" # Incluye el título de misiones
+        f"{achievements_text}\n\n"  # Incluye el título de logros
+        f"{missions_text}"  # Incluye el título de misiones
     )
+
 
 async def get_mission_details_message(mission: Mission) -> str:
     # Usar el mensaje personalizado para detalles de misión
@@ -76,23 +86,19 @@ async def get_mission_details_message(mission: Mission) -> str:
         mission_name=mission.name,
         mission_description=mission.description,
         points_reward=mission.reward_points,
-        mission_type=mission.type.capitalize()
+        mission_type=mission.type.capitalize(),
     )
+
 
 async def get_reward_details_message(reward: Reward, user_points: int) -> str:
-    stock_info = ""
-    if reward.stock != -1:
-        stock_info = BOT_MESSAGES["reward_details_stock_info"].format(stock_left=reward.stock)
-    else:
-        stock_info = BOT_MESSAGES["reward_details_no_stock_info"]
+    """Return a formatted description of a reward."""
 
-    # Usar el mensaje personalizado para detalles de recompensa
     return BOT_MESSAGES["reward_details_text"].format(
-        reward_name=reward.name,
+        reward_title=reward.title,
         reward_description=reward.description,
-        reward_cost=reward.cost,
-        stock_info=stock_info
+        required_points=reward.required_points,
     )
+
 
 async def get_ranking_message(users_ranking: list[User]) -> str:
     """
@@ -106,13 +112,17 @@ async def get_ranking_message(users_ranking: list[User]) -> str:
     for i, user in enumerate(users_ranking):
         # Format each user entry
         # Usa user.username si está disponible, de lo contrario, user.first_name
-        display_name = user.username if user.username else user.first_name if user.first_name else "Usuario Desconocido"
-        ranking_text += BOT_MESSAGES["ranking_entry"].format(
-            rank=i + 1,
-            username=display_name,
-            points=user.points,
-            level=user.level
-        ) + "\n"
+        display_name = (
+            user.username
+            if user.username
+            else user.first_name if user.first_name else "Usuario Desconocido"
+        )
+        ranking_text += (
+            BOT_MESSAGES["ranking_entry"].format(
+                rank=i + 1, username=display_name, points=user.points, level=user.level
+            )
+            + "\n"
+        )
 
     return ranking_text
 
@@ -123,4 +133,3 @@ async def get_mission_completed_message(mission: Mission) -> str:
         mission_name=mission.name,
         points_reward=mission.reward_points,
     )
-
