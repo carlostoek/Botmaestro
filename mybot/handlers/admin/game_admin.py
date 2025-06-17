@@ -28,9 +28,11 @@ from utils.admin_state import (
     AdminBadgeStates,
     AdminDailyGiftStates,
     AdminRewardStates,
+    AdminLevelStates,
 )
 from services.mission_service import MissionService
 from services.reward_service import RewardService
+from services.level_service import LevelService
 from database.models import User, Mission
 from services.point_service import PointService
 from services.config_service import ConfigService
@@ -968,5 +970,266 @@ async def finish_edit_reward(callback: CallbackQuery, state: FSMContext, session
         BOT_MESSAGES["reward_updated"], reply_markup=get_admin_content_rewards_keyboard()
     )
     await state.clear()
+    await callback.answer()
+
+
+# --- Gestión de Niveles ---
+
+@router.callback_query(F.data == "admin_levels_view")
+async def admin_levels_view(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    service = LevelService(session)
+    levels = await service.list_levels()
+    if levels:
+        lines = [
+            f"{lvl.level_id}. {lvl.name} - {lvl.min_points} pts ({lvl.reward or '-'} )"
+            for lvl in levels
+        ]
+        text = "\n".join(lines)
+    else:
+        text = "No hay niveles definidos."
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard("admin_content_levels"))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_level_add")
+async def admin_level_add(callback: CallbackQuery, state: FSMContext):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    await callback.message.edit_text(
+        "Número del nivel:", reply_markup=get_back_keyboard("admin_content_levels")
+    )
+    await state.set_state(AdminLevelStates.creating_level_number)
+    await callback.answer()
+
+
+@router.message(AdminLevelStates.creating_level_number)
+async def level_add_number(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        num = int(message.text)
+    except ValueError:
+        await send_temporary_reply(message, BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(level_number=num)
+    await message.answer("Nombre del nivel:")
+    await state.set_state(AdminLevelStates.creating_level_name)
+
+
+@router.message(AdminLevelStates.creating_level_name)
+async def level_add_name(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(name=message.text)
+    await message.answer("Puntos requeridos:")
+    await state.set_state(AdminLevelStates.creating_level_points)
+
+
+@router.message(AdminLevelStates.creating_level_points)
+async def level_add_points(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        pts = int(message.text)
+    except ValueError:
+        await send_temporary_reply(message, BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(points=pts)
+    await message.answer("Recompensa (opcional, '-' para ninguna):")
+    await state.set_state(AdminLevelStates.creating_level_reward)
+
+
+@router.message(AdminLevelStates.creating_level_reward)
+async def level_add_reward(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    reward = message.text
+    if reward.lower() in {"-", "none", "no", "skip"}:
+        reward = None
+    await state.update_data(reward=reward)
+    data = await state.get_data()
+    text = (
+        f"Crear nivel {data['level_number']} - {data['name']} con {data['points']} pts"
+        f" y recompensa '{data['reward'] or '-'}'?"
+    )
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Confirmar", callback_data="confirm_create_level")],
+            [InlineKeyboardButton(text="❌ Cancelar", callback_data="admin_content_levels")],
+        ]
+    )
+    await message.answer(text, reply_markup=kb)
+    await state.set_state(AdminLevelStates.confirming_create_level)
+
+
+@router.callback_query(F.data == "confirm_create_level")
+async def confirm_create_level(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    data = await state.get_data()
+    service = LevelService(session)
+    await service.create_level(
+        data["level_number"], data["name"], data["points"], reward=data.get("reward")
+    )
+    await callback.message.edit_text(
+        BOT_MESSAGES["level_created"], reply_markup=get_admin_content_levels_keyboard()
+    )
+    await state.clear()
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_level_edit")
+async def admin_level_edit(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    levels = await LevelService(session).list_levels()
+    keyboard = [
+        [InlineKeyboardButton(text=f"{l.level_id}. {l.name}", callback_data=f"edit_level_{l.level_id}")]
+        for l in levels
+    ]
+    keyboard.append([InlineKeyboardButton(text="⬅️ Volver", callback_data="admin_content_levels")])
+    await callback.message.edit_text(
+        "Selecciona el nivel a editar:", reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("edit_level_"))
+async def start_edit_level(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    lvl_id = int(callback.data.split("edit_level_")[-1])
+    level = await session.get(Level, lvl_id)
+    if not level:
+        await callback.answer("Nivel no encontrado", show_alert=True)
+        return
+    await state.update_data(level_id=lvl_id)
+    await callback.message.edit_text(
+        "Nuevo número de nivel:", reply_markup=get_back_keyboard("admin_level_edit")
+    )
+    await state.set_state(AdminLevelStates.editing_level_number)
+    await callback.answer()
+
+
+@router.message(AdminLevelStates.editing_level_number)
+async def edit_level_number(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        num = int(message.text)
+    except ValueError:
+        await send_temporary_reply(message, BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(new_number=num)
+    await message.answer("Nuevo nombre:")
+    await state.set_state(AdminLevelStates.editing_level_name)
+
+
+@router.message(AdminLevelStates.editing_level_name)
+async def edit_level_name(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    await state.update_data(new_name=message.text)
+    await message.answer("Nuevos puntos requeridos:")
+    await state.set_state(AdminLevelStates.editing_level_points)
+
+
+@router.message(AdminLevelStates.editing_level_points)
+async def edit_level_points(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        pts = int(message.text)
+    except ValueError:
+        await send_temporary_reply(message, BOT_MESSAGES["invalid_number"])
+        return
+    await state.update_data(new_points=pts)
+    await message.answer("Nueva recompensa (opcional, '-' para ninguna):")
+    await state.set_state(AdminLevelStates.editing_level_reward)
+
+
+@router.message(AdminLevelStates.editing_level_reward)
+async def finish_edit_level(message: Message, state: FSMContext, session: AsyncSession):
+    if not is_admin(message.from_user.id):
+        return
+    reward = message.text
+    if reward.lower() in {"-", "none", "no", "skip"}:
+        reward = None
+    data = await state.get_data()
+    service = LevelService(session)
+    await service.update_level(
+        data["level_id"],
+        new_level_number=data.get("new_number"),
+        name=data.get("new_name"),
+        required_points=data.get("new_points"),
+        reward=reward,
+    )
+    await message.answer(
+        BOT_MESSAGES["level_updated"], reply_markup=get_admin_content_levels_keyboard()
+    )
+    await state.clear()
+
+
+@router.callback_query(F.data == "admin_level_delete")
+async def admin_level_delete(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    levels = await LevelService(session).list_levels()
+    if len(levels) <= 1:
+        await callback.answer("No se puede eliminar el último nivel", show_alert=True)
+        return
+    keyboard = [
+        [InlineKeyboardButton(text=f"{l.level_id}. {l.name}", callback_data=f"del_level_{l.level_id}")]
+        for l in levels
+    ]
+    keyboard.append([InlineKeyboardButton(text="⬅️ Volver", callback_data="admin_content_levels")])
+    await callback.message.edit_text(
+        "Selecciona el nivel a eliminar:", reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("del_level_"))
+async def confirm_del_level(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    lvl_id = int(callback.data.split("del_level_")[-1])
+    service = LevelService(session)
+    levels = await service.list_levels()
+    if len(levels) <= 1:
+        await callback.answer("No se puede eliminar el último nivel", show_alert=True)
+        return
+    level = await session.get(Level, lvl_id)
+    if not level:
+        await callback.answer("Nivel no encontrado", show_alert=True)
+        return
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Confirmar", callback_data=f"confirm_del_level_{lvl_id}")],
+            [InlineKeyboardButton(text="🔙 Cancelar", callback_data="admin_level_delete")],
+        ]
+    )
+    await callback.message.edit_text(
+        f"¿Eliminar nivel {level.level_id} - {level.name}?", reply_markup=kb
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("confirm_del_level_"))
+async def delete_level(callback: CallbackQuery, session: AsyncSession):
+    if not is_admin(callback.from_user.id):
+        return await callback.answer()
+    lvl_id = int(callback.data.split("confirm_del_level_")[-1])
+    service = LevelService(session)
+    levels = await service.list_levels()
+    if len(levels) <= 1:
+        await callback.answer("No se puede eliminar el último nivel", show_alert=True)
+        return
+    await service.delete_level(lvl_id)
+    await callback.message.edit_text(
+        BOT_MESSAGES["level_deleted"], reply_markup=get_admin_content_levels_keyboard()
+    )
     await callback.answer()
 

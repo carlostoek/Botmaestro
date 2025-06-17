@@ -136,6 +136,23 @@ class AdminRewardStates(StatesGroup):
     editing_reward_type = State()
 
 
+class AdminLevelStates(StatesGroup):
+    """States for managing gamification levels."""
+
+    creating_level_number = State()
+    creating_level_name = State()
+    creating_level_points = State()
+    creating_level_reward = State()
+    confirming_create_level = State()
+
+    editing_level_number = State()
+    editing_level_name = State()
+    editing_level_points = State()
+    editing_level_reward = State()
+
+    deleting_level = State()
+
+
 class AdminManualBadgeStates(StatesGroup):
     """States for manually awarding badges."""
 
