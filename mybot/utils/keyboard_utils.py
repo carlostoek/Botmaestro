@@ -483,6 +483,15 @@ def get_back_keyboard(callback_data: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
+def get_post_confirmation_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard used to confirm publishing a channel post."""
+    keyboard = [
+        [InlineKeyboardButton(text="✅ Publicar", callback_data="confirm_channel_post")],
+        [InlineKeyboardButton(text="🔙 Volver", callback_data="admin_vip")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
 def get_reward_type_keyboard() -> InlineKeyboardMarkup:
     """Keyboard to select reward type."""
     keyboard = InlineKeyboardMarkup(

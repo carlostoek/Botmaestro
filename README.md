@@ -41,6 +41,15 @@
 | `VIP_SCHEDULER_INTERVAL` | Seconds between VIP subscription checks. Defaults to `3600` |
 | `REACTION_BUTTONS` | Semicolon separated texts for reaction buttons used on channel posts |
 
+### Customising reaction buttons
+
+The texts shown below channel posts can be changed at runtime. Open the admin
+menu, choose **Configuración** and then **📝 Configurar Reacciones**. Send the
+three button labels separated by `;` (for example: `👍 Me gusta;🔁 Compartir;🔥 Sexy`).
+You can also set initial values using the `REACTION_BUTTONS` environment
+variable or by editing the `DEFAULT_REACTION_BUTTONS` list in
+`mybot/utils/config.py`.
+
 3. Initialise the database and populate base data (tables, achievements,
    levels and some starter missions). Run this command once after configuring
    the environment:

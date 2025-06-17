@@ -54,6 +54,7 @@ class AdminContentStates(StatesGroup):
     """States related to posting content to channels."""
 
     waiting_for_channel_post_text = State()
+    confirming_channel_post = State()
 
 
 class AdminConfigStates(StatesGroup):
