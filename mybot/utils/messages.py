@@ -127,3 +127,11 @@ BADGE_TEXTS = {
         "description": "Consigue 5 invitaciones exitosas",
     },
 }
+
+# Plantilla de mensaje para mostrar el nivel del usuario
+NIVEL_TEMPLATE = """
+🎮 Tu nivel actual: {current_level}
+✨ Puntos totales: {points}
+📊 Progreso hacia el siguiente nivel: {percentage:.1%}
+🎯 Te faltan {points_needed} puntos para alcanzar el nivel {next_level}.
+"""

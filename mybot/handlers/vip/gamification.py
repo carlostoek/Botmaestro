@@ -33,6 +33,7 @@ from utils.keyboard_utils import (
     get_parent_menu,
     get_child_menu,
     get_main_reply_keyboard,
+    get_back_keyboard,
 )
 from utils.message_utils import (
     get_profile_message,
@@ -40,7 +41,8 @@ from utils.message_utils import (
     get_reward_details_message,
     get_ranking_message,
 )
-from utils.messages import BOT_MESSAGES
+from utils.messages import BOT_MESSAGES, NIVEL_TEMPLATE
+from services.level_service import get_next_level_info
 from utils.user_roles import is_admin
 from keyboards.admin_main_kb import get_admin_main_kb
 from utils.menu_utils import update_menu
@@ -138,6 +140,28 @@ async def menu_callback_handler(callback: CallbackQuery, session: AsyncSession):
     if keyboard:
         await callback.message.edit_text(message_text, reply_markup=keyboard)
         await set_user_menu_state(session, user_id, new_state)
+    await callback.answer()
+
+
+# Mostrar información de nivel actual del usuario
+@router.callback_query(F.data == "view_level")
+async def show_user_level(callback: CallbackQuery, session: AsyncSession):
+    user_id = callback.from_user.id
+    user = await session.get(User, user_id)
+    if not user:
+        await callback.answer("Debes iniciar con /start", show_alert=True)
+        return
+
+    info = get_next_level_info(int(user.points))
+    text = NIVEL_TEMPLATE.format(
+        current_level=info["current_level"],
+        points=int(user.points),
+        percentage=info["percentage_to_next"],
+        points_needed=info["points_needed"],
+        next_level=info["next_level"],
+    )
+
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard("vip_game"))
     await callback.answer()
 
 

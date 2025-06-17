@@ -29,6 +29,20 @@ DEFAULT_LEVELS = [
     (20, "Cosmos", 14500, "Recompensa épica"),
 ]
 
+# Tabla de niveles usada para el cálculo rápido sin acceso a base de datos
+LEVELS = [
+    (1, 0),
+    (2, 100),
+    (3, 250),
+    (4, 500),
+    (5, 800),
+    (6, 1200),
+    (7, 1800),
+    (8, 2500),
+    (9, 3500),
+    (10, 5000),
+]
+
 class LevelService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -84,3 +98,49 @@ class LevelService:
                     await bot.send_message(user.id, special_msg)
             return True
         return False
+
+
+def get_user_level(points: int) -> int:
+    """Calculate user level based on accumulated points."""
+    current_level = LEVELS[0][0]
+    for level, threshold in LEVELS:
+        if points >= threshold:
+            current_level = level
+        else:
+            break
+    return current_level
+
+
+def get_next_level_info(points: int) -> dict:
+    """Return progress information towards the next level."""
+    current_level = get_user_level(points)
+
+    # Find thresholds for current and next levels
+    current_threshold = 0
+    next_threshold = None
+    for level, threshold in LEVELS:
+        if level == current_level:
+            current_threshold = threshold
+        elif level > current_level and next_threshold is None:
+            next_threshold = threshold
+            break
+
+    if next_threshold is None:
+        # At max level
+        return {
+            "current_level": current_level,
+            "next_level": current_level,
+            "points_needed": 0,
+            "percentage_to_next": 1.0,
+        }
+
+    points_needed = max(0, next_threshold - points)
+    total_range = next_threshold - current_threshold
+    percentage = (points - current_threshold) / total_range if total_range else 1
+
+    return {
+        "current_level": current_level,
+        "next_level": current_level + 1,
+        "points_needed": points_needed,
+        "percentage_to_next": min(max(percentage, 0), 1),
+    }
