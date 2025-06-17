@@ -7,6 +7,7 @@ from aiogram.filters import Command
 from datetime import datetime
 
 from utils.user_roles import is_vip_member
+from utils.menu_utils import send_menu, update_menu
 from utils.keyboard_utils import (
     get_back_keyboard,
     get_main_menu_keyboard,
@@ -29,11 +30,12 @@ router = Router()
 async def vip_menu(message: Message, session: AsyncSession):
     if not await is_vip_member(message.bot, message.from_user.id, session=session):
         return
-    sub_service = SubscriptionService(session)
-    sub = await sub_service.get_subscription(message.from_user.id)
-    status = "Activa" if sub else "Sin registro"
-    await message.answer(
-        f"Suscripción VIP: {status}", reply_markup=get_vip_main_kb()
+    await send_menu(
+        message,
+        "Bienvenido al Diván de Diana",
+        get_vip_main_kb(),
+        session,
+        "vip_main",
     )
 
 
@@ -42,11 +44,12 @@ async def vip_menu_cb(callback: CallbackQuery, session: AsyncSession):
     """Return to the VIP main menu from callbacks."""
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
         return await callback.answer()
-    sub_service = SubscriptionService(session)
-    sub = await sub_service.get_subscription(callback.from_user.id)
-    status = "Activa" if sub else "Sin registro"
-    await callback.message.edit_text(
-        f"Suscripción VIP: {status}", reply_markup=get_vip_main_kb()
+    await update_menu(
+        callback,
+        "Bienvenido al Diván de Diana",
+        get_vip_main_kb(),
+        session,
+        "vip_main",
     )
     await callback.answer()
 
