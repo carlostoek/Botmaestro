@@ -10,6 +10,7 @@ BOT_MESSAGES = {
         "Tu lugar sigue aquí. Tus puntos también... y hay nuevas sorpresas esperándote.\n\n"
         "¿List@ para continuar *El Juego del Diván*?"
     ),
+    "vip_members_only": "Esta sección está disponible solo para miembros VIP.",
     "profile_not_registered": "Parece que aún no has comenzado tu recorrido. Usa /start para dar tu primer paso.",
     "profile_title": "🛋️ *Tu rincón en El Diván de Diana*",
     "profile_points": "📌 *Puntos acumulados:* `{user_points}`",

@@ -29,6 +29,13 @@ router = Router()
 @router.message(Command("vip_menu"))
 async def vip_menu(message: Message, session: AsyncSession):
     if not await is_vip_member(message.bot, message.from_user.id, session=session):
+        await send_temporary_reply(
+            message,
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+        )
         return
     await send_menu(
         message,
@@ -43,7 +50,14 @@ async def vip_menu(message: Message, session: AsyncSession):
 async def vip_menu_cb(callback: CallbackQuery, session: AsyncSession):
     """Return to the VIP main menu from callbacks."""
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
     await update_menu(
         callback,
         "Bienvenido al Diván de Diana",
@@ -57,7 +71,14 @@ async def vip_menu_cb(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "vip_subscription")
 async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
     sub_service = SubscriptionService(session)
     sub = await sub_service.get_subscription(callback.from_user.id)
 
@@ -85,7 +106,14 @@ async def vip_subscription(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "vip_missions")
 async def vip_missions(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
     user = await session.get(User, callback.from_user.id)
     mission_service = MissionService(session)
     missions = await mission_service.get_daily_active_missions(user_id=callback.from_user.id)
@@ -109,7 +137,14 @@ async def vip_missions(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "vip_badges")
 async def vip_badges(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
 
     ach_service = AchievementService(session)
     badges = await ach_service.get_user_badges(callback.from_user.id)
@@ -145,7 +180,14 @@ async def vip_badges(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "vip_game")
 async def vip_game(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
     await callback.message.edit_text(
         BOT_MESSAGES["start_welcome_returning_user"],
         reply_markup=get_game_menu_kb(),
@@ -157,7 +199,14 @@ async def vip_game(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "game_profile")
 async def game_profile(callback: CallbackQuery, session: AsyncSession):
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
 
     user_id = callback.from_user.id
     user: User | None = await session.get(User, user_id)
@@ -193,7 +242,14 @@ async def game_profile(callback: CallbackQuery, session: AsyncSession):
 async def gain_points(callback: CallbackQuery, session: AsyncSession):
     """Show information on how to earn points in the game."""
     if not await is_vip_member(callback.bot, callback.from_user.id, session=session):
-        return await callback.answer()
+        await callback.answer(
+            BOT_MESSAGES.get(
+                "vip_members_only",
+                "Esta sección está disponible solo para miembros VIP.",
+            ),
+            show_alert=True,
+        )
+        return
 
     await callback.message.edit_text(
         BOT_MESSAGES.get(
