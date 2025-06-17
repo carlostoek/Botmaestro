@@ -9,6 +9,7 @@ from utils.text_utils import sanitize_text
 class ConfigService:
     VIP_CHANNEL_KEY = "VIP_CHANNEL_ID"
     FREE_CHANNEL_KEY = "FREE_CHANNEL_ID"
+    REACTION_BUTTONS_KEY = "reaction_buttons"
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -49,4 +50,15 @@ class ConfigService:
 
     async def set_free_channel_id(self, chat_id: int) -> ConfigEntry:
         return await self.set_value(self.FREE_CHANNEL_KEY, str(chat_id))
+
+    async def get_reaction_buttons(self) -> list[str]:
+        """Return custom reaction button texts or defaults."""
+        value = await self.get_value(self.REACTION_BUTTONS_KEY)
+        if value:
+            texts = [t.strip() for t in value.split(";") if t.strip()]
+            if len(texts) >= 3:
+                return texts[:3]
+        from utils.config import DEFAULT_REACTION_BUTTONS
+
+        return DEFAULT_REACTION_BUTTONS
 

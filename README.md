@@ -39,6 +39,7 @@
 | `VIP_POINTS_MULTIPLIER` | Points multiplier applied when a VIP user earns points |
 | `CHANNEL_SCHEDULER_INTERVAL` | Seconds between checks for channel requests. Defaults to `30` |
 | `VIP_SCHEDULER_INTERVAL` | Seconds between VIP subscription checks. Defaults to `3600` |
+| `REACTION_BUTTONS` | Semicolon separated texts for reaction buttons used on channel posts |
 
 3. Initialise the database and populate base data (tables, achievements,
    levels and some starter missions). Run this command once after configuring
@@ -107,6 +108,8 @@ Acceso a la gestión de canales (VIP y free)
 Acceso al módulo de juego (gamificación)
 
 Configuraciones generales y de seguridad
+
+Personalización de los textos de reacción que acompañan las publicaciones de canal
 
 Sección de estadísticas del bot
 
