@@ -235,11 +235,6 @@ def get_admin_manage_content_keyboard():
             ],
             [
                 InlineKeyboardButton(
-                    text="📝 Publicar en Canal", callback_data="admin_send_channel_post"
-                )
-            ],
-            [
-                InlineKeyboardButton(
                     text="🔙 Volver al Menú Principal de Administrador",
                     callback_data="admin_main_menu",
                 )
