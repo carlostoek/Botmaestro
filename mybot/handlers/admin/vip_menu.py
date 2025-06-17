@@ -225,10 +225,16 @@ async def process_vip_channel_post(message: Message, state: FSMContext, session:
         return
     service = MessageService(session, bot)
     sent = await service.send_interactive_post(message.text, "vip")
-    if not sent:
+    if sent is None:
         await send_clean_message(
             message,
             "Canal VIP no configurado.",
+            reply_markup=get_admin_vip_kb(),
+        )
+    elif sent is False:
+        await send_clean_message(
+            message,
+            "No se pudo publicar en el canal. Revisa los permisos del bot.",
             reply_markup=get_admin_vip_kb(),
         )
     else:
