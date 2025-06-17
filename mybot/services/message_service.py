@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aiogram import Bot
-from aiogram.types import Message
+from aiogram.types import Message, ReactionTypeEmoji
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,6 +52,14 @@ class MessageService:
                 sent.message_id,
                 reply_markup=get_interactive_post_kb(sent.message_id, buttons),
             )
+            if channel_type == "vip":
+                vip_reactions = await config.get_vip_reactions()
+                if vip_reactions:
+                    await self.bot.set_message_reaction(
+                        channel_id,
+                        sent.message_id,
+                        [ReactionTypeEmoji(emoji=r) for r in vip_reactions],
+                    )
             return sent
         except (TelegramBadRequest, TelegramForbiddenError, TelegramAPIError):
             return False
