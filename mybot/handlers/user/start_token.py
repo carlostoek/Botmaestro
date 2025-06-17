@@ -12,6 +12,7 @@ from services.subscription_service import SubscriptionService
 from utils.menu_utils import send_temporary_reply
 from services.achievement_service import AchievementService
 from services.config_service import ConfigService
+from aiogram.dispatcher.event.bases import CancelHandler
 
 router = Router()
 
@@ -22,15 +23,13 @@ async def start_with_token(message: Message, command: CommandObject, session: As
     if not token_string:
         return
 
-    # Temporarily send back the token for debugging
-    await message.answer(f"Tu token es {token_string}")
 
     service = TokenService(session)
     try:
         duration = await service.activate_token(token_string, message.from_user.id)
     except Exception:
         await send_temporary_reply(message, "Token inválido o ya utilizado.")
-        return
+        raise CancelHandler()
 
     user = await session.get(User, message.from_user.id)
     if not user:
@@ -72,3 +71,4 @@ async def start_with_token(message: Message, command: CommandObject, session: As
         await message.answer(f"¡Bienvenido! Únete a nuestro canal VIP: {invite_link}")
     else:
         await message.answer("Suscripción activada correctamente!")
+    raise CancelHandler()
